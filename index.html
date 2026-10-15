@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>法务管理系统</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --primary:#2563eb; --primary-d:#1e40af; --bg:#f7f8fa; --card:#ffffff;
+  --line:#e5e7eb; --text:#1f2937; --sub:#6b7280; --soft:#f3f4f6;
+  --green:#16a34a; --orange:#d97706; --red:#dc2626; --radius:12px;
+  --shadow:0 1px 3px rgba(16,24,40,.08),0 1px 2px rgba(16,24,40,.06);
+  --shadow-lg:0 10px 30px rgba(16,24,40,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased}
+.hidden{display:none!important}
+.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.center{text-align:center}
+.sub{color:var(--sub)}
+.tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;line-height:20px;white-space:nowrap}
+.tag-blue{background:#eff6ff;color:#1d4ed8}
+.tag-green{background:#f0fdf4;color:#15803d}
+.tag-orange{background:#fff7ed;color:#c2410c}
+.tag-red{background:#fef2f2;color:#b91c1c}
+.tag-gray{background:var(--soft);color:var(--sub)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--text);font-size:13px;cursor:pointer;transition:.15s;white-space:nowrap}
+.btn:hover{border-color:var(--primary);color:var(--primary)}
+.btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-d);color:#fff}
+.btn-danger:hover{border-color:var(--red);color:var(--red)}
+.btn-sm{padding:4px 10px;font-size:12px;border-radius:6px}
+/* ---------- 登录 ---------- */
+#view-login{height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f8fafc 0%,#eef2ff 100%)}
+.login-card{width:400px;background:#fff;border-radius:16px;box-shadow:var(--shadow-lg);padding:44px 40px}
+.login-logo{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#2563eb,#4f46e5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;margin:0 auto 16px}
+.login-card h1{font-size:20px;text-align:center;margin-bottom:4px}
+.login-card p{text-align:center;color:var(--sub);font-size:13px;margin-bottom:28px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;color:var(--sub);margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;background:#fff;transition:.15s}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.field textarea{resize:vertical;min-height:72px}
+.login-btn{width:100%;padding:11px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-size:15px;cursor:pointer;margin-top:6px}
+.login-btn:hover{background:var(--primary-d)}
+.login-tip{margin-top:14px;text-align:center;font-size:12px;color:var(--sub)}
+/* ---------- 工作台 ---------- */
+.topbar{height:60px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:20}
+.topbar .crumb{font-size:15px;font-weight:600}
+.topbar .spacer{flex:1}
+.topbar .who{color:var(--sub);font-size:13px}
+.dash-wrap{height:calc(100vh - 60px);padding:24px;display:flex;flex-direction:column;gap:24px}
+.dash-head{display:flex;align-items:baseline;justify-content:space-between}
+.dash-head h2{font-size:20px}
+.dash-grid{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:1fr;gap:24px}
+.dash-card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:.2s;padding:32px;text-align:center}
+.dash-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:#c7d7fe}
+.dash-card.dev{cursor:default;background:repeating-linear-gradient(45deg,#fff,#fff 12px,#fafafa 12px,#fafafa 24px)}
+.dash-card.dev:hover{transform:none;box-shadow:var(--shadow)}
+.dash-icon{width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:32px}
+.di-blue{background:#eff6ff}.di-indigo{background:#eef2ff}.di-teal{background:#f0fdfa}.di-gray{background:var(--soft)}
+.dash-card h3{font-size:18px}
+.dash-card p{color:var(--sub);font-size:13px;line-height:1.7}
+.dash-card .cnt{font-size:12px;color:var(--sub)}
+@media(max-width:1100px){.dash-grid{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr)}}
+/* ---------- 通用页面 ---------- */
+.page{padding:24px 28px;max-width:1500px;margin:0 auto}
+.page-head{display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+.page-head h2{font-size:18px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.panel + .panel{margin-top:20px}
+.panel-hd{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
+.panel-hd h3{font-size:15px}
+.panel-hd .spacer{flex:1}
+.panel-bd{padding:20px}
+/* 表格 */
+table.tbl{width:100%;border-collapse:collapse;table-layout:fixed}
+table.tbl th{background:#fafbfc;color:var(--sub);font-weight:600;font-size:12.5px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+table.tbl td{padding:11px 14px;border-bottom:1px solid #f1f2f4;font-size:13.5px;vertical-align:middle;word-break:break-all}
+table.tbl tbody tr:last-child td{border-bottom:none}
+table.tbl tbody tr:hover{background:#f8faff}
+.link{color:var(--primary);cursor:pointer;font-weight:600}
+.link:hover{text-decoration:underline}
+.empty{padding:44px 20px;text-align:center;color:var(--sub);font-size:13px}
+/* 详情布局 */
+.info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.info-item{padding:12px 16px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff}
+.info-item .k{font-size:12px;color:var(--sub);margin-bottom:4px}
+.info-item .v{font-size:14px;font-weight:500;word-break:break-all}
+.info-block{margin-bottom:18px}
+.info-block h4{font-size:13px;color:var(--sub);margin-bottom:8px;font-weight:600}
+.info-block .txt{background:#fafbfc;border:1px solid var(--line);border-radius:8px;padding:12px 14px;line-height:1.8;font-size:13.5px;white-space:pre-wrap;word-break:break-word}
+/* Tabs */
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin-bottom:20px;overflow-x:auto}
+.tab{padding:10px 18px;font-size:14px;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;font-weight:500}
+.tab:hover{color:var(--primary)}
+.tab.on{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+/* 时间轴 */
+.timeline{position:relative;padding-left:26px}
+.timeline:before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.tl-item{position:relative;padding-bottom:22px}
+.tl-item:last-child{padding-bottom:0}
+.tl-dot{position:absolute;left:-26px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--primary)}
+.tl-dot.done{background:var(--primary)}
+.tl-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tl-head b{font-size:14px}
+.tl-date{color:var(--sub);font-size:12.5px}
+.tl-note{margin-top:6px;color:#374151;font-size:13px;line-height:1.7;background:#fafbfc;border:1px solid var(--line);border-radius:8px;padding:10px 12px;white-space:pre-wrap;word-break:break-word}
+/* 上传 */
+.upzone{border:2px dashed #cbd5e1;border-radius:12px;padding:30px;text-align:center;color:var(--sub);cursor:pointer;transition:.15s;background:#fbfcfe}
+.upzone:hover,.upzone.drag{border-color:var(--primary);background:#eff6ff;color:var(--primary)}
+.upzone .big{font-size:26px;margin-bottom:8px}
+.file-chip{display:inline-flex;align-items:center;gap:6px;background:#f1f5f9;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px;margin:4px 6px 0 0}
+.file-chip b{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 弹窗 */
+.modal-mask{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal{background:#fff;border-radius:14px;width:560px;max-width:94vw;max-height:88vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
+.modal-hd{padding:16px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center}
+.modal-hd h3{font-size:16px}
+.modal-hd .x{margin-left:auto;cursor:pointer;color:var(--sub);font-size:20px;line-height:1;padding:2px 6px;border-radius:6px}
+.modal-hd .x:hover{background:var(--soft);color:var(--text)}
+.modal-bd{padding:20px 22px;overflow-y:auto}
+.modal-ft{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+.frm-row{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.frm-row .field.full{grid-column:1/-1}
+/* 模块卡片（法律费用） */
+.fee-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.fee-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:28px;cursor:pointer;transition:.2s;box-shadow:var(--shadow)}
+.fee-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:#c7d7fe}
+.fee-card .fi{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:14px}
+.fee-card h3{font-size:16px;margin-bottom:8px}
+.fee-card p{color:var(--sub);font-size:13px;line-height:1.7}
+.fee-card .amt{margin-top:14px;font-size:22px;font-weight:700}
+/* 搜索 */
+.search{padding:8px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;width:240px}
+.search:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+/* toast */
+#toast{position:fixed;top:76px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 22px;border-radius:8px;font-size:13px;z-index:200;opacity:0;transition:.25s;pointer-events:none}
+#toast.show{opacity:1}
+.notice-bar{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:10px;padding:10px 16px;font-size:13px;margin-bottom:16px;display:flex;gap:10px;align-items:center}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- ================= 登录 ================= -->
+<div id="view-login" class="view">
+  <div class="login-card">
+    <div class="login-logo">⚖️</div>
+    <h1>法务管理系统</h1>
+    <p>Legal Management System</p>
+    <div class="field"><label>邮箱</label><input id="lg-user" type="email" placeholder="请输入邮箱" autocomplete="off"></div>
+    <div class="field"><label>密码</label><input id="lg-pass" type="password" placeholder="至少 6 位"></div>
+    <button class="login-btn" onclick="doLogin()">登 录</button>
+    <button class="login-btn" onclick="doRegister()" style="background:#fff;color:var(--primary);border:1px solid var(--primary);margin-top:10px">注册新账号</button>
+    <div class="login-tip">首次使用请点「注册新账号」，注册成功自动登录，无需邮箱验证</div>
+  </div>
+</div>
+
+<!-- ================= 工作台 ================= -->
+<div id="view-dash" class="view hidden">
+  <div class="topbar">
+    <span style="font-size:18px;font-weight:700;color:var(--primary)">⚖️ 法务管理系统</span>
+    <span class="spacer"></span>
+    <button class="btn btn-sm" onclick="exportData()">⬇ 导出数据</button>
+    <button class="btn btn-sm" onclick="document.getElementById('importFile').click()">⬆ 导入数据</button>
+    <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
+    <span class="who" id="whoName"></span>
+    <button class="btn btn-sm" onclick="doLogout()">退出登录</button>
+  </div>
+  <div class="dash-wrap">
+    <div class="dash-head">
+      <div><h2>子系统工作台</h2><div class="sub" style="font-size:13px;margin-top:4px">请选择要进入的业务子系统</div></div>
+    </div>
+    <div class="dash-grid">
+      <div class="dash-card" onclick="go('lit')">
+        <div class="dash-icon di-blue">📁</div>
+        <h3>诉讼管理</h3>
+        <p>案件总览、案件详情、案件进程<br>案件费用、案件材料、相关安排</p>
+        <span class="cnt" id="cnt-lit"></span>
+      </div>
+      <div class="dash-card" onclick="go('biz')">
+        <div class="dash-icon di-indigo">🏢</div>
+        <h3>商办法律分析</h3>
+        <p>客户基本情况、现存问题、问题分析<br>诉前准备初步判断</p>
+        <span class="cnt" id="cnt-biz"></span>
+      </div>
+      <div class="dash-card" onclick="go('fee')">
+        <div class="dash-icon di-teal">💰</div>
+        <h3>法律费用管理</h3>
+        <p>常法/坐班服务、常务/专项服务费<br>案件相关费用</p>
+        <span class="cnt" id="cnt-fee"></span>
+      </div>
+      <div class="dash-card dev">
+        <div class="dash-icon di-gray">🚧</div>
+        <h3>开发中</h3>
+        <p>更多子系统模块<br>正在规划中，敬请期待</p>
+        <span class="cnt">敬请期待</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 诉讼管理 ================= -->
+<div id="view-lit" class="view hidden">
+  <div class="topbar">
+    <span class="link" onclick="backPrev()">← 返回上一级</span>
+    <span class="crumb">诉讼管理</span><span class="sub" id="lit-crumb2"></span>
+    <span class="spacer"></span>
+    <button class="btn btn-sm" id="litAddBtn" onclick="openCaseModal()">＋ 新增案件</button>
+  </div>
+  <div class="page" id="lit-list-page">
+    <div class="page-head"><h2>案件总览</h2><input class="search" id="litSearch" placeholder="搜索案件名称 / 案号 / 当事人" oninput="renderLitList()"></div>
+    <div class="panel"><div class="panel-bd" style="padding:0" id="litListWrap"></div></div>
+  </div>
+  <div class="page hidden" id="lit-detail-page">
+    <div class="page-head">
+      <h2 id="litDetailName"></h2>
+      <span id="litDetailTag"></span>
+      <span class="spacer"></span>
+      <button class="btn btn-sm btn-danger" onclick="delCase()">删除案件</button>
+    </div>
+    <div class="tabs" id="litTabs"></div>
+    <div id="litTabBody"></div>
+  </div>
+</div>
+
+<!-- ================= 商办法律分析 ================= -->
+<div id="view-biz" class="view hidden">
+  <div class="topbar">
+    <span class="link" onclick="backPrev()">← 返回上一级</span>
+    <span class="crumb">商办法律分析</span><span class="sub" id="biz-crumb2"></span>
+    <span class="spacer"></span>
+    <button class="btn btn-sm" id="bizAddBtn" onclick="openClientModal()">＋ 新增客户</button>
+  </div>
+  <div class="page" id="biz-list-page">
+    <div class="page-head"><h2>客户列表</h2><input class="search" id="bizSearch" placeholder="搜索客户名称" oninput="renderBizList()"></div>
+    <div class="panel"><div class="panel-bd" style="padding:0" id="bizListWrap"></div></div>
+  </div>
+  <div class="page hidden" id="biz-detail-page">
+    <div class="page-head">
+      <h2 id="bizDetailName"></h2>
+      <span id="bizDetailTag"></span>
+      <span class="spacer"></span>
+      <button class="btn btn-sm btn-danger" onclick="delClient()">删除客户</button>
+    </div>
+    <div class="panel"><div class="panel-hd"><h3>① 客户基本情况</h3></div>
+      <div class="panel-bd" id="bizBaseInfo"></div></div>
+    <div class="panel"><div class="panel-hd"><h3>② 现存问题</h3><span class="spacer"></span><button class="btn btn-sm" onclick="openProblemModal()">＋ 添加问题</button></div>
+      <div class="panel-bd" id="bizProblems"></div></div>
+    <div class="panel"><div class="panel-hd"><h3>③ 问题分析</h3><span class="spacer"></span><button class="btn btn-sm" onclick="openAnalysisModal()">✎ 编辑分析</button></div>
+      <div class="panel-bd" id="bizAnalysis"></div></div>
+    <div class="panel"><div class="panel-hd"><h3>④ 初步判断是否需做诉前准备</h3></div>
+      <div class="panel-bd" id="bizPrep"></div></div>
+  </div>
+</div>
+
+<!-- ================= 法律费用管理 ================= -->
+<div id="view-fee" class="view hidden">
+  <div class="topbar">
+    <span class="link" onclick="backPrev()">← 返回上一级</span>
+    <span class="crumb">法律费用管理</span><span class="sub" id="fee-crumb2"></span>
+    <span class="spacer"></span>
+    <button class="btn btn-sm hidden" id="feeAddBtn">＋ 新增记录</button>
+  </div>
+  <div class="page" id="fee-home">
+    <div class="page-head"><h2>费用模块</h2></div>
+    <div class="fee-grid" id="feeCards"></div>
+  </div>
+  <div class="page hidden" id="fee-module">
+    <div class="page-head"><h2 id="feeModuleTitle"></h2></div>
+    <div class="panel"><div class="panel-bd" style="padding:0" id="feeTableWrap"></div></div>
+  </div>
+</div>
+
+<div id="modalRoot"></div>
+
+<script>
+/* ==================== 数据层 ==================== */
+const DB_KEY = 'legalms_v2';
+const SUPABASE_URL = 'https://hxfncjuxipxfmrurktie.supabase.co/rest/v1/';  
+const SUPABASE_KEY = 'sb_publishable_R1pyXsVJFskOax0s1-ka6Q_4sGctz_E';  
+let DB = null;
+let sb = null;
+let cloudReady = false;
+let saveTimer = null;
+function uid(){return Date.now().toString(36) + Math.random().toString(36).slice(2,7)}
+function today(){return new Date().toISOString().slice(0,10)}
+function money(n){return (Number(n)||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+function seed(){
+  const mk=(name)=>({id:uid(),name,caseNo:'',court:'',role:'原告',oppo:'',amount:0,status:'诉前',filingDate:'',summary:'',
+    process:[],costs:[],materials:[],arrangements:[]});
+  const mkc=(name)=>({id:uid(),name,contractStart:'',contractEnd:'',rent:0,payMethod:'',deposit:0,performance:'',
+    problems:[],analysis:'',prep:{need:false,note:''}});
+  return {
+    cases:[mk('易合坊'),mk('腾跃'),mk('游小方'),mk('潘佳亮')],
+    clients:[mkc('篮羽球场'),mkc('茜卡'),mkc('世瀛')],
+    fees:{regular:[],service:[],casefee:[]}
+  };
+}
+function load(){try{DB=JSON.parse(localStorage.getItem(DB_KEY))}catch(e){} if(!DB||!DB.cases){DB=seed();localStorage.setItem(DB_KEY,JSON.stringify(DB))}}
+function save(){
+  localStorage.setItem(DB_KEY,JSON.stringify(DB));
+  if(!cloudReady)return;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(syncToCloud,800);
+}
+async function syncToCloud(){
+  try{
+    const {error}=await sb.from('app_data').upsert({id:1,data:DB,updated_at:new Date().toISOString()});
+    if(error)console.warn('云端保存失败：',error.message);else console.log('已同步到云端');
+  }catch(e){console.warn('云端保存失败：',e)}
+}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),1800)}
+function caseName(id){const c=DB.cases.find(x=>x.id===id);return c?c.name:'—'}
+
+/* ==================== 视图导航 ==================== */
+const VIEWS=['view-login','view-dash','view-lit','view-biz','view-fee'];
+/* 返回上一级：详情页→列表页→工作台 */
+function backPrev(){
+  if(!document.getElementById('view-lit').classList.contains('hidden')){
+    if(!document.getElementById('lit-detail-page').classList.contains('hidden')){showLitList();window.scrollTo(0,0);return}
+  }
+  if(!document.getElementById('view-biz').classList.contains('hidden')){
+    if(!document.getElementById('biz-detail-page').classList.contains('hidden')){showBizList();window.scrollTo(0,0);return}
+  }
+  if(!document.getElementById('view-fee').classList.contains('hidden')){
+    if(feeMod){showFeeHome();window.scrollTo(0,0);return}
+  }
+  go('dash');
+}
+function go(v){
+  VIEWS.forEach(id=>document.getElementById(id).classList.add('hidden'));
+  document.getElementById('view-'+v).classList.remove('hidden');
+  if(v==='dash')renderDash();
+  if(v==='lit'){showLitList();}
+  if(v==='biz'){showBizList();}
+  if(v==='fee'){showFeeHome();}
+}
+async function doLogin(){
+  const email=val('lg-user'),pw=document.getElementById('lg-pass').value;
+  if(!email||!pw){toast('请输入邮箱和密码');return}
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pw});
+  if(error){toast('登录失败：邮箱或密码错误');return}
+  enterApp(data.user);
+}
+async function doRegister(){
+  const email=val('lg-user'),pw=document.getElementById('lg-pass').value;
+  if(!email){toast('请输入邮箱');return}
+  if(pw.length<6){toast('密码至少 6 位');return}
+  const {data,error}=await sb.auth.signUp({email,password:pw});
+  if(error){toast('注册失败：'+error.message);return}
+  if(!data.session){toast('注册成功，请直接登录');return}
+  enterApp(data.user);
+}
+async function enterApp(user){
+  sessionStorage.setItem('lms_user',user.email);
+  document.getElementById('whoName').textContent='👤 '+user.email;
+  await cloudLoad();
+  go('dash'); toast('欢迎，'+user.email.split('@')[0]);
+}
+async function doLogout(){try{await sb.auth.signOut()}catch(e){} cloudReady=false;sessionStorage.removeItem('lms_user');VIEWS.forEach(id=>document.getElementById(id).classList.add('hidden'));document.getElementById('view-login').classList.remove('hidden')}
+function renderDash(){
+  document.getElementById('cnt-lit').textContent='在办案件 '+DB.cases.length+' 件';
+  document.getElementById('cnt-biz').textContent='分析中客户 '+DB.clients.length+' 家';
+  const cf=DB.fees.casefee.reduce((s,x)=>s+Number(x.amount||0),0);
+  document.getElementById('cnt-fee').textContent='费用记录 '+(DB.fees.regular.length+DB.fees.service.length+DB.fees.casefee.length)+' 条';
+}
+
+/* ==================== 通用弹窗 ==================== */
+function openModal(title,bodyHTML,onOk,okText){
+  const r=document.getElementById('modalRoot');
+  r.innerHTML=`<div class="modal-mask" onclick="if(event.target===this)closeModal()">
+    <div class="modal"><div class="modal-hd"><h3>${esc(title)}</h3><span class="x" onclick="closeModal()">✕</span></div>
+    <div class="modal-bd">${bodyHTML}</div>
+    <div class="modal-ft"><button class="btn" onclick="closeModal()">取消</button><button class="btn btn-primary" id="modalOk">${esc(okText||'保存')}</button></div></div></div>`;
+  document.getElementById('modalOk').onclick=()=>{if(onOk()!==false)closeModal()};
+}
+function closeModal(){document.getElementById('modalRoot').innerHTML=''}
+function val(id){return document.getElementById(id).value.trim()}
+function setErr(id,msg){const e=document.getElementById(id);e.style.borderColor='var(--red)';toast(msg);return false}
+
+/* ==================== 诉讼管理 ==================== */
+const LIT_TABS=[['overview','案件总览'],['detail','案件详情'],['process','案件进程'],['cost','案件费用'],['material','案件材料'],['arrange','相关安排']];
+let curCase=null, litTab='overview';
+
+function renderLitList(){
+  const kw=document.getElementById('litSearch').value.trim();
+  let list=DB.cases.filter(c=>!kw||c.name.includes(kw)||c.caseNo.includes(kw)||c.oppo.includes(kw));
+  const stageColor={'诉前':'tag-gray','一审中':'tag-blue','二审中':'tag-orange','执行中':'tag-red','已结案':'tag-green'};
+  let html='<table class="tbl"><colgroup><col style="width:32%"><col style="width:16%"><col style="width:11%"><col style="width:8%"><col style="width:12%"><col style="width:8%"><col style="width:9%"></colgroup>';
+  html+='<thead><tr><th>案件名称</th><th>案号</th><th>受理法院</th><th>我方角色</th><th class="num">争议标的额（元）</th><th>案件状态</th><th>操作</th></tr></thead><tbody>';
+  if(!list.length)html+='<tr><td colspan="7"><div class="empty">暂无案件，点击右上角「新增案件」创建</div></td></tr>';
+  list.forEach(c=>{
+    html+=`<tr><td><span class="link" onclick="openCase('${c.id}')">${esc(c.name)}</span></td><td>${esc(c.caseNo)}</td><td>${esc(c.court)}</td><td>${esc(c.role)}</td><td class="num">${money(c.amount)}</td><td><span class="tag ${stageColor[c.status]||'tag-gray'}">${esc(c.status)}</span></td><td><button class="btn btn-sm" onclick="openCase('${c.id}')">查看</button></td></tr>`;
+  });
+  document.getElementById('litListWrap').innerHTML=html+'</tbody></table>';
+}
+function showLitList(){
+  document.getElementById('lit-list-page').classList.remove('hidden');
+  document.getElementById('lit-detail-page').classList.add('hidden');
+  document.getElementById('lit-crumb2').textContent='';document.getElementById('litAddBtn').classList.remove('hidden');
+  renderLitList();
+}
+function openCase(id){
+  curCase=DB.cases.find(c=>c.id===id); if(!curCase)return;
+  document.getElementById('lit-list-page').classList.add('hidden');
+  document.getElementById('lit-detail-page').classList.remove('hidden');
+  document.getElementById('lit-crumb2').textContent='/ '+curCase.name;
+  document.getElementById('litAddBtn').classList.add('hidden');
+  litTab='overview'; renderLitDetail();
+  window.scrollTo(0,0);
+}
+function renderLitDetail(){
+  const c=curCase;
+  document.getElementById('litDetailName').textContent=c.name;
+  document.getElementById('litDetailTag').innerHTML=`<span class="tag tag-blue">${esc(c.status)}</span>`;
+  document.getElementById('litTabs').innerHTML=LIT_TABS.map(t=>`<div class="tab ${litTab===t[0]?'on':''}" onclick="litTab='${t[0]}';renderLitDetail()">${t[1]}</div>`).join('');
+  const B=document.getElementById('litTabBody');
+  if(litTab==='overview')B.innerHTML=litOverview(c);
+  else if(litTab==='detail')B.innerHTML=litDetail(c);
+  else if(litTab==='process')B.innerHTML=litProcess(c);
+  else if(litTab==='cost')B.innerHTML=litCost(c);
+  else if(litTab==='material'){B.innerHTML=litMaterial(c);bindDropzone(c);}
+  else if(litTab==='arrange')B.innerHTML=litArrange(c);
+}
+function infoCell(k,v,cls){return `<div class="info-item"><div class="k">${k}</div><div class="v ${cls||''}">${v===''||v==null?'—':v}</div></div>`}
+function litOverview(c){
+  return `<div class="panel"><div class="panel-hd"><h3>案件基本信息</h3><span class="spacer"></span><button class="btn btn-sm" onclick="openCaseModal('${c.id}')">✎ 编辑</button></div>
+  <div class="panel-bd"><div class="info-grid">
+  ${infoCell('案件名称',esc(c.name))}${infoCell('案号',esc(c.caseNo))}${infoCell('受理法院',esc(c.court))}${infoCell('我方角色',esc(c.role))}
+  ${infoCell('对方当事人',esc(c.oppo))}${infoCell('案件状态',`<span class="tag tag-blue">${esc(c.status)}</span>`)}${infoCell('立案日期',esc(c.filingDate))}${infoCell('争议标的额（元）',`<span class="num">${money(c.amount)}</span>`)}
+  </div>
+  <div class="info-block" style="margin-top:18px"><h4>案情简介</h4><div class="txt">${esc(c.summary)||'—'}</div></div>
+  <div class="info-grid" style="grid-template-columns:repeat(4,1fr)">
+  ${infoCell('进程节点数',c.process.length,'num')}${infoCell('费用合计（元）',`<span class="num">${money(c.costs.reduce((s,x)=>s+Number(x.amount||0),0))}</span>`)}${infoCell('材料份数',c.materials.length,'num')}${infoCell('待办安排',c.arrangements.filter(a=>!a.done).length,'num')}
+  </div></div></div>`;
+}
+function litDetail(c){
+  return `<div class="panel"><div class="panel-hd"><h3>案件详情</h3><span class="spacer"></span><button class="btn btn-sm" onclick="openCaseModal('${c.id}')">✎ 编辑</button></div>
+  <div class="panel-bd">
+  <div class="info-grid">
+  ${infoCell('案件名称',esc(c.name))}${infoCell('案号',esc(c.caseNo))}${infoCell('案由','合同纠纷')}${infoCell('受理法院',esc(c.court))}
+  ${infoCell('我方角色',esc(c.role))}${infoCell('对方当事人',esc(c.oppo))}${infoCell('承办法官','李法官')}${infoCell('联系电话','021-5882xxxx')}
+  ${infoCell('立案日期',esc(c.filingDate))}${infoCell('开庭日期（最近）',c.arrangements.filter(a=>a.type==='开庭').map(a=>a.date).sort()[0]||'待定')}${infoCell('案件状态',`<span class="tag tag-blue">${esc(c.status)}</span>`)}${infoCell('争议标的额（元）',`<span class="num">${money(c.amount)}</span>`)}
+  </div>
+  <div class="info-block" style="margin-top:18px"><h4>诉讼请求 / 案件详情</h4><div class="txt">${esc(c.summary)||'—'}</div></div></div></div>`;
+}
+const STAGES=['诉前','一审','二审','执行'];
+function litProcess(c){
+  let html=`<div class="panel"><div class="panel-hd"><h3>案件进程（诉前 → 一审 → 二审 → 执行）</h3><span class="spacer"></span><button class="btn btn-sm" onclick="openProcModal()">＋ 添加进程节点</button></div><div class="panel-bd">`;
+  html+='<div style="display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap">'+STAGES.map((s,i)=>{
+    const reached=c.process.some(p=>p.stage===s);
+    return `<div style="flex:1;min-width:120px;text-align:center;padding:10px;border-radius:10px;border:1px solid ${reached?'#bfdbfe':'var(--line)'};background:${reached?'#eff6ff':'#fafafa'}"><b style="color:${reached?'var(--primary)':'var(--sub)'}">${i+1}. ${s}</b><div class="sub" style="font-size:12px;margin-top:4px">${reached?'已进入':'未开始'}</div></div>`;
+  }).join('')+'</div>';
+  if(!c.process.length)html+='<div class="empty">暂无进程记录</div>';
+  else{html+='<div class="timeline">'+[...c.process].sort((a,b)=>a.date.localeCompare(b.date)||STAGES.indexOf(a.stage)-STAGES.indexOf(b.stage)).map((p,i)=>`
+    <div class="tl-item"><div class="tl-dot ${p.done?'done':''}"></div>
+    <div class="tl-head"><b>[${esc(p.stage)}] ${esc(p.title)}</b><span class="tl-date">${esc(p.date)}</span>
+    <button class="btn btn-sm" onclick="openProcModal(${i})">编辑</button>
+    <button class="btn btn-sm btn-danger" onclick="delProc(${i})">删除</button></div>
+    ${p.note?`<div class="tl-note">${esc(p.note)}</div>`:''}</div>`).join('')+'</div>';}
+  return html+'</div></div>';
+}
+function openProcModal(idx){
+  const c=curCase; const p=idx!=null?c.process[idx]:{stage:'诉前',date:today(),title:'',note:'',done:true};
+  openModal(idx!=null?'编辑进程节点':'添加进程节点',`
+    <div class="frm-row">
+    <div class="field"><label>阶段 *</label><select id="pm-stage">${STAGES.map(s=>`<option ${p.stage===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="field"><label>日期 *</label><input id="pm-date" type="date" value="${p.date}"></div>
+    <div class="field full"><label>节点标题 *</label><input id="pm-title" value="${esc(p.title)}" placeholder="如：立案受理 / 一审判决 / 申请强制执行"></div>
+    <div class="field full"><label>备注说明</label><textarea id="pm-note" placeholder="补充说明该节点的具体情况">${esc(p.note)}</textarea></div>
+    <div class="field full"><label><input type="checkbox" id="pm-done" ${p.done?'checked':''} style="width:auto;margin-right:6px">该节点已完成</label></div>
+    </div>`,()=>{
+      const title=val('pm-title'); if(!title)return setErr('pm-title','请填写节点标题');
+      const obj={stage:val('pm-stage'),date:val('pm-date')||today(),title,note:val('pm-note'),done:document.getElementById('pm-done').checked};
+      if(idx!=null)c.process[idx]=obj; else c.process.push(obj);
+      save();renderLitDetail();toast('已保存');return true;
+    });
+}
+function delProc(i){if(!confirm('确定删除该进程节点？'))return;curCase.process.splice(i,1);save();renderLitDetail();toast('已删除')}
+function litCost(c){
+  let html=`<div class="panel"><div class="panel-hd"><h3>案件费用</h3><span class="spacer"></span><button class="btn btn-sm" onclick="openCostModal()">＋ 添加费用</button></div>
+  <div class="panel-bd" style="padding:0"><table class="tbl"><colgroup><col style="width:12%"><col style="width:26%"><col class="num" style="width:14%"><col style="width:10%"><col style="width:26%"><col style="width:12%"></colgroup>
+  <thead><tr><th>日期</th><th>费用项目</th><th class="num">金额（元）</th><th>承担方</th><th>备注</th><th>操作</th></tr></thead><tbody>`;
+  if(!c.costs.length)html+='<tr><td colspan="6"><div class="empty">暂无费用记录</div></td></tr>';
+  c.costs.forEach((x,i)=>{html+=`<tr><td>${esc(x.date)}</td><td>${esc(x.item)}</td><td class="num">${money(x.amount)}</td><td>${esc(x.payer)}</td><td>${esc(x.note)}</td><td><button class="btn btn-sm" onclick="openCostModal(${i})">编辑</button> <button class="btn btn-sm btn-danger" onclick="delCost(${i})">删除</button></td></tr>`});
+  html+=`</tbody><tfoot><tr style="background:#fafbfc;font-weight:600"><td colspan="2">合计</td><td class="num">${money(c.costs.reduce((s,x)=>s+Number(x.amount||0),0))}</td><td colspan="3"></td></tr></tfoot></table></div></div>`;
+  return html;
+}
+function openCostModal(idx){
+  const c=curCase; const x=idx!=null?c.costs[idx]:{date:today(),item:'',amount:'',payer:'我方',note:''};
+  openModal(idx!=null?'编辑费用':'添加费用',`<div class="frm-row">
+   <div class="field"><label>日期 *</label><input id="cm-date" type="date" value="${x.date}"></div>
+   <div class="field"><label>承担方</label><select id="cm-payer">${['我方','对方','第三方'].map(p=>`<option ${x.payer===p?'selected':''}>${p}</option>`).join('')}</select></div>
+   <div class="field full"><label>费用项目 *</label><input id="cm-item" value="${esc(x.item)}" placeholder="如：诉讼费 / 保全费 / 鉴定费 / 律师费"></div>
+   <div class="field"><label>金额（元）*</label><input id="cm-amount" type="number" step="0.01" value="${x.amount}" class="num" style="text-align:right"></div>
+   <div class="field"><label>备注</label><input id="cm-note" value="${esc(x.note)}"></div></div>`,()=>{
+    const item=val('cm-item'),amt=parseFloat(val('cm-amount'));
+    if(!item)return setErr('cm-item','请填写费用项目');
+    if(isNaN(amt))return setErr('cm-amount','请填写正确金额');
+    const obj={date:val('cm-date')||today(),item,amount:amt,payer:val('cm-payer'),note:val('cm-note')};
+    if(idx!=null)c.costs[idx]=obj; else c.costs.push(obj);
+    save();renderLitDetail();toast('已保存');return true;
+  });
+}
+function delCost(i){if(!confirm('确定删除该费用记录？'))return;curCase.costs.splice(i,1);save();renderLitDetail();toast('已删除')}
+const FMT_OK=['zip','rar','7z','pdf','doc','docx','xls','xlsx','html','htm','eml','txt','png','jpg','jpeg'];
+function fmtIcon(n){const e=n.split('.').pop().toLowerCase();const m={pdf:'📕',doc:'📘',docx:'📘',xls:'📗',xlsx:'📗',zip:'🗜️',rar:'🗜️','7z':'🗜️',html:'🌐',htm:'🌐',eml:'✉️'};return m[e]||'📄'}
+function litMaterial(c){
+  let html=`<div class="panel"><div class="panel-hd"><h3>案件材料</h3></div><div class="panel-bd">
+  <div class="upzone" id="upzone"><div class="big">📤</div><b>点击或拖拽上传案件材料</b><div style="font-size:12px;margin-top:6px">支持压缩包（zip/rar/7z）、PDF、Word（doc/docx）、Excel（xls/xlsx）、HTML、EML 邮件等格式，单文件 ≤ 3MB（内容随数据一并保存，可下载）</div></div>
+  <input type="file" id="fileInput" multiple class="hidden" accept=".zip,.rar,.7z,.pdf,.doc,.docx,.xls,.xlsx,.html,.htm,.eml,.txt,.png,.jpg,.jpeg">
+  <div style="margin-top:18px">`;
+  if(!c.materials.length)html+='<div class="empty">暂无案件材料</div>';
+  else{
+    html+='<table class="tbl"><colgroup><col style="width:6%"><col style="width:34%"><col style="width:12%"><col style="width:12%"><col style="width:16%"><col style="width:20%"></colgroup><thead><tr><th></th><th>文件名</th><th>格式</th><th class="num">大小</th><th>上传时间</th><th>操作</th></tr></thead><tbody>';
+    c.materials.forEach(m=>{html+=`<tr><td class="center">${fmtIcon(m.name)}</td><td>${esc(m.name)}</td><td><span class="tag tag-gray">.${esc(m.ext)}</span></td><td class="num">${m.size}</td><td>${esc(m.time)}</td><td>${m.data?`<button class="btn btn-sm" onclick="downloadMat('${m.id}')">⬇ 下载</button> `:'<span class="sub" style="font-size:12px">（仅登记）</span> '}<button class="btn btn-sm btn-danger" onclick="delMat('${m.id}')">删除</button></td></tr>`});
+    html+='</tbody></table>';
+  }
+  return html+'</div></div></div>';
+}
+function bindDropzone(c){
+  const z=document.getElementById('upzone'),f=document.getElementById('fileInput');
+  if(!z)return;
+  z.onclick=()=>f.click();
+  z.ondragover=e=>{e.preventDefault();z.classList.add('drag')};
+  z.ondragleave=()=>z.classList.remove('drag');
+  z.ondrop=e=>{e.preventDefault();z.classList.remove('drag');handleFiles(e.dataTransfer.files)};
+  f.onchange=()=>handleFiles(f.files);
+  function handleFiles(files){
+    [...files].forEach(file=>{
+      const ext=file.name.split('.').pop().toLowerCase();
+      if(!FMT_OK.includes(ext)){toast('不支持的格式：'+file.name);return}
+      const rec={id:uid(),name:file.name,ext,time:new Date().toLocaleString('zh-CN'),size:(file.size/1024).toFixed(1)+' KB',data:null};
+      const done=()=>{c.materials.push(rec);save();renderLitDetail();toast('已上传：'+file.name)};
+      if(file.size<=3*1024*1024){
+        const r=new FileReader();r.onload=()=>{rec.data=r.result;done()};r.readAsDataURL(file);
+      }else{rec.size=(file.size/1048576).toFixed(2)+' MB';done();}
+    });
+    f.value='';
+  }
+}
+function downloadMat(id){
+  const m=curCase.materials.find(x=>x.id===id); if(!m||!m.data)return;
+  const a=document.createElement('a');a.href=m.data;a.download=m.name;a.click();
+}
+function delMat(id){if(!confirm('确定删除该材料？'))return;curCase.materials=curCase.materials.filter(m=>m.id!==id);save();renderLitDetail();toast('已删除')}
+function litArrange(c){
+  let html=`<div class="panel"><div class="panel-hd"><h3>案件相关安排</h3><span class="spacer"></span><button class="btn btn-sm btn-primary" onclick="openArrModal()">＋ 新增安排</button></div>
+  <div class="panel-bd" style="padding:0"><table class="tbl"><colgroup><col style="width:11%"><col style="width:8%"><col style="width:10%"><col style="width:22%"><col style="width:16%"><col style="width:19%"><col style="width:14%"></colgroup>
+  <thead><tr><th>日期</th><th>时间</th><th>类型</th><th>事项</th><th>地点</th><th>备注</th><th>操作</th></tr></thead><tbody>`;
+  if(!c.arrangements.length)html+='<tr><td colspan="7"><div class="empty">暂无相关安排</div></td></tr>';
+  [...c.arrangements].sort((a,b)=>a.date.localeCompare(b.date)).forEach(a=>{
+    html+=`<tr style="${a.done?'opacity:.55':''}"><td>${esc(a.date)}</td><td>${esc(a.time)}</td><td><span class="tag ${a.type==='开庭'?'tag-red':a.type==='举证'?'tag-orange':'tag-blue'}">${esc(a.type)}</span></td><td>${a.done?'✅ ':''}${esc(a.title)}</td><td>${esc(a.location)}</td><td>${esc(a.note)}</td>
+    <td><button class="btn btn-sm" onclick="openArrModal('${a.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delArr('${a.id}')">删除</button></td></tr>`});
+  return html+'</tbody></table></div></div>';
+}
+function openArrModal(id){
+  const c=curCase; const a=id?c.arrangements.find(x=>x.id===id):{date:today(),time:'09:00',type:'开庭',title:'',location:'',note:'',done:false};
+  openModal(id?'编辑相关安排':'新增相关安排',`<div class="frm-row">
+   <div class="field"><label>日期 *</label><input id="am-date" type="date" value="${a.date}"></div>
+   <div class="field"><label>时间</label><input id="am-time" type="time" value="${a.time}"></div>
+   <div class="field"><label>类型</label><select id="am-type">${['开庭','举证','调解','谈话','其他'].map(t=>`<option ${a.type===t?'selected':''}>${t}</option>`).join('')}</select></div>
+   <div class="field"><label>地点</label><input id="am-loc" value="${esc(a.location)}" placeholder="如：浦东法院第12法庭"></div>
+   <div class="field full"><label>事项 *</label><input id="am-title" value="${esc(a.title)}" placeholder="如：第一次庭审 / 提交证据"></div>
+   <div class="field full"><label>备注</label><textarea id="am-note">${esc(a.note)}</textarea></div>
+   <div class="field full"><label><input type="checkbox" id="am-done" ${a.done?'checked':''} style="width:auto;margin-right:6px">已完成</label></div></div>`,()=>{
+    const title=val('am-title'); if(!title)return setErr('am-title','请填写事项');
+    const obj={id:id||uid(),date:val('am-date')||today(),time:val('am-time'),type:val('am-type'),title,location:val('am-loc'),note:val('am-note'),done:document.getElementById('am-done').checked};
+    if(id){const i=c.arrangements.findIndex(x=>x.id===id);c.arrangements[i]=obj}else c.arrangements.push(obj);
+    save();renderLitDetail();toast('已保存');return true;
+  });
+}
+function delArr(id){if(!confirm('确定删除该安排？'))return;curCase.arrangements=curCase.arrangements.filter(a=>a.id!==id);save();renderLitDetail();toast('已删除')}
+function openCaseModal(id){
+  const c=id?DB.cases.find(x=>x.id===id):{name:'',caseNo:'',court:'',role:'原告',oppo:'',amount:'',status:'一审中',filingDate:today(),summary:''};
+  openModal(id?'编辑案件':'新增案件',`<div class="frm-row">
+   <div class="field full"><label>案件名称 *</label><input id="cs-name" value="${esc(c.name)}"></div>
+   <div class="field"><label>案号</label><input id="cs-no" value="${esc(c.caseNo)}"></div>
+   <div class="field"><label>受理法院</label><input id="cs-court" value="${esc(c.court)}"></div>
+   <div class="field"><label>我方角色</label><select id="cs-role">${['原告','被告','申请人','被申请人','申请执行人','被申请执行人','第三人'].map(r=>`<option ${c.role===r?'selected':''}>${r}</option>`).join('')}</select></div>
+   <div class="field"><label>对方当事人</label><input id="cs-oppo" value="${esc(c.oppo)}"></div>
+   <div class="field"><label>案件状态</label><select id="cs-status">${['诉前','一审中','二审中','执行中','已结案'].map(s=>`<option ${c.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+   <div class="field"><label>争议标的额（元）</label><input id="cs-amount" type="number" step="0.01" class="num" style="text-align:right" value="${c.amount}"></div>
+   <div class="field"><label>立案日期</label><input id="cs-date" type="date" value="${c.filingDate}"></div>
+   <div class="field full"><label>案情简介 / 诉讼请求</label><textarea id="cs-summary">${esc(c.summary)}</textarea></div></div>`,()=>{
+    const name=val('cs-name'); if(!name)return setErr('cs-name','请填写案件名称');
+    const obj={name,caseNo:val('cs-no'),court:val('cs-court'),role:val('cs-role'),oppo:val('cs-oppo'),status:val('cs-status'),amount:parseFloat(val('cs-amount'))||0,filingDate:val('cs-date'),summary:val('cs-summary')};
+    if(id){Object.assign(DB.cases.find(x=>x.id===id),obj)}
+    else DB.cases.push({id:uid(),...obj,process:[],costs:[],materials:[],arrangements:[]});
+    save();
+    if(curCase&&curCase.id===id){renderLitDetail()}else renderLitList();
+    toast('已保存');return true;
+  });
+}
+function delCase(){if(!confirm('确定删除该案件及其全部数据？'))return;DB.cases=DB.cases.filter(c=>c.id!==curCase.id);DB.fees.casefee.forEach(f=>{if(f.caseId===curCase.id){f.caseId='';f.linked=false}});save();showLitList();toast('已删除')}
+
+/* ==================== 商办法律分析 ==================== */
+let curClient=null;
+function renderBizList(){
+  const kw=document.getElementById('bizSearch').value.trim();
+  const list=DB.clients.filter(c=>!kw||c.name.includes(kw));
+  let html='<table class="tbl"><colgroup><col style="width:24%"><col style="width:12%"><col style="width:12%"><col class="num" style="width:11%"><col style="width:20%"><col style="width:14%"><col style="width:7%"></colgroup>';
+  html+='<thead><tr><th>客户名称</th><th>合同开始日期</th><th>合同结束日期</th><th class="num">月租金（元）</th><th>租金支付方式</th><th>履约情况</th><th>操作</th></tr></thead><tbody>';
+  if(!list.length)html+='<tr><td colspan="7"><div class="empty">暂无客户，点击右上角「新增客户」创建</div></td></tr>';
+  list.forEach(c=>{
+    html+=`<tr><td><span class="link" onclick="openClient('${c.id}')">${esc(c.name)}</span></td><td>${esc(c.contractStart)}</td><td>${esc(c.contractEnd)}</td><td class="num">${money(c.rent)}</td><td>${esc(c.payMethod)}</td><td>${esc(c.performance)}</td><td><button class="btn btn-sm" onclick="openClient('${c.id}')">查看</button></td></tr>`;
+  });
+  document.getElementById('bizListWrap').innerHTML=html+'</tbody></table>';
+}
+function showBizList(){
+  document.getElementById('biz-list-page').classList.remove('hidden');
+  document.getElementById('biz-detail-page').classList.add('hidden');
+  document.getElementById('biz-crumb2').textContent='';document.getElementById('bizAddBtn').classList.remove('hidden');
+  renderBizList();
+}
+function openClient(id){
+  curClient=DB.clients.find(c=>c.id===id); if(!curClient)return;
+  document.getElementById('biz-list-page').classList.add('hidden');
+  document.getElementById('biz-detail-page').classList.remove('hidden');
+  document.getElementById('biz-crumb2').textContent='/ '+curClient.name;
+  document.getElementById('bizAddBtn').classList.add('hidden');
+  renderBizDetail(); window.scrollTo(0,0);
+}
+function renderBizDetail(){
+  const c=curClient;
+  document.getElementById('bizDetailName').textContent=c.name;
+  document.getElementById('bizDetailTag').innerHTML=c.prep.need?'<span class="tag tag-red">建议诉前准备</span>':'<span class="tag tag-green">暂无需诉前准备</span>';
+  document.getElementById('bizBaseInfo').innerHTML=`<div class="info-grid">
+   ${infoCell('客户名称',esc(c.name))}${infoCell('合同开始日期',esc(c.contractStart))}${infoCell('合同结束日期',esc(c.contractEnd))}${infoCell('剩余租期',remainLease(c))}
+   ${infoCell('租金（元/月）',`<span class="num">${money(c.rent)}</span>`)}${infoCell('租金支付方式',esc(c.payMethod))}${infoCell('租赁保证金（元）',`<span class="num">${money(c.deposit)}</span>`)}${infoCell('履约情况',esc(c.performance))}
+  </div><div style="margin-top:12px;text-align:right"><button class="btn btn-sm" onclick="openClientModal('${c.id}')">✎ 编辑基本情况</button></div>`;
+  const lv={高:'tag-red',中:'tag-orange',低:'tag-gray'};
+  document.getElementById('bizProblems').innerHTML=c.problems.length?c.problems.map(p=>`
+   <div style="border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px">
+     <div style="display:flex;align-items:center;gap:10px"><b>${esc(p.title)}</b><span class="tag ${lv[p.level]||'tag-gray'}">风险等级：${esc(p.level)}</span>
+     <span class="spacer" style="flex:1"></span>
+     <button class="btn btn-sm" onclick="openProblemModal('${p.id}')">编辑</button>
+     <button class="btn btn-sm btn-danger" onclick="delProblem('${p.id}')">删除</button></div>
+     <div style="margin-top:8px;color:#374151;line-height:1.7">${esc(p.desc)}</div></div>`).join(''):'<div class="empty">暂无现存问题</div>';
+  document.getElementById('bizAnalysis').innerHTML=`<div class="txt" style="min-height:60px">${esc(c.analysis)||'—'}</div>`;
+  document.getElementById('bizPrep').innerHTML=`
+   <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+     <span style="font-size:14px"><b>初步判断：</b></span>
+     <span class="tag ${c.prep.need?'tag-red':'tag-green'}" style="font-size:13px;padding:5px 16px">${c.prep.need?'⚠ 需要做诉前准备':'✓ 暂不需要诉前准备'}</span>
+     <span style="flex:1"></span>
+     <button class="btn btn-sm" onclick="togglePrep()">切换判断</button>
+     <button class="btn btn-sm" onclick="openPrepModal()">✎ 编辑说明</button></div>
+   <div class="txt">${esc(c.prep.note)||'—'}</div>`;
+}
+function remainLease(c){
+  if(!c.contractEnd)return '—';
+  const days=Math.ceil((new Date(c.contractEnd)-new Date(today()))/86400000);
+  if(days<0)return '已到期 '+Math.abs(days)+' 天';
+  return '剩余约 '+Math.floor(days/30)+' 个月 '+days%30+' 天';
+}
+function openClientModal(id){
+  const c=id?DB.clients.find(x=>x.id===id):{name:'',contractStart:'',contractEnd:'',rent:'',payMethod:'',deposit:'',performance:''};
+  openModal(id?'编辑客户基本情况':'新增客户',`<div class="frm-row">
+   <div class="field full"><label>客户名称 *</label><input id="cl-name" value="${esc(c.name)}"></div>
+   <div class="field"><label>合同开始日期 *</label><input id="cl-start" type="date" value="${c.contractStart}"></div>
+   <div class="field"><label>合同结束日期 *</label><input id="cl-end" type="date" value="${c.contractEnd}"></div>
+   <div class="field"><label>租金（元/月）*</label><input id="cl-rent" type="number" step="0.01" class="num" style="text-align:right" value="${c.rent}"></div>
+   <div class="field"><label>租赁保证金（元）</label><input id="cl-deposit" type="number" step="0.01" class="num" style="text-align:right" value="${c.deposit}"></div>
+   <div class="field full"><label>租金支付方式</label><input id="cl-pay" value="${esc(c.payMethod)}" placeholder="如：按月支付，每月5日前支付当月租金"></div>
+   <div class="field full"><label>履约情况</label><textarea id="cl-perf">${esc(c.performance)}</textarea></div></div>`,()=>{
+    const name=val('cl-name');if(!name)return setErr('cl-name','请填写客户名称');
+    const obj={name,contractStart:val('cl-start'),contractEnd:val('cl-end'),rent:parseFloat(val('cl-rent'))||0,deposit:parseFloat(val('cl-deposit'))||0,payMethod:val('cl-pay'),performance:val('cl-perf')};
+    if(id)Object.assign(DB.clients.find(x=>x.id===id),obj);
+    else DB.clients.push({id:uid(),...obj,problems:[],analysis:'',prep:{need:false,note:''}});
+    save();
+    if(curClient&&curClient.id===id)renderBizDetail();else renderBizList();
+    toast('已保存');return true;
+  });
+}
+function delClient(){if(!confirm('确定删除该客户及其分析数据？'))return;DB.clients=DB.clients.filter(c=>c.id!==curClient.id);save();showBizList();toast('已删除')}
+function openProblemModal(pid){
+  const c=curClient; const p=pid?c.problems.find(x=>x.id===pid):{title:'',desc:'',level:'中'};
+  openModal(pid?'编辑问题':'添加现存问题',`<div class="frm-row">
+   <div class="field"><label>问题标题 *</label><input id="pb-title" value="${esc(p.title)}"></div>
+   <div class="field"><label>风险等级</label><select id="pb-level">${['高','中','低'].map(l=>`<option ${p.level===l?'selected':''}>${l}</option>`).join('')}</select></div>
+   <div class="field full"><label>问题描述</label><textarea id="pb-desc">${esc(p.desc)}</textarea></div></div>`,()=>{
+    const title=val('pb-title');if(!title)return setErr('pb-title','请填写问题标题');
+    const obj={id:pid||uid(),title,desc:val('pb-desc'),level:val('pb-level')};
+    if(pid){const i=c.problems.findIndex(x=>x.id===pid);c.problems[i]=obj}else c.problems.push(obj);
+    save();renderBizDetail();toast('已保存');return true;
+  });
+}
+function delProblem(pid){if(!confirm('确定删除该问题？'))return;curClient.problems=curClient.problems.filter(p=>p.id!==pid);save();renderBizDetail();toast('已删除')}
+function openAnalysisModal(){
+  openModal('编辑问题分析',`<div class="field"><label>问题分析</label><textarea id="an-txt" style="min-height:160px">${esc(curClient.analysis)}</textarea></div>`,()=>{
+    curClient.analysis=val('an-txt');save();renderBizDetail();toast('已保存');return true;
+  });
+}
+function togglePrep(){curClient.prep.need=!curClient.prep.need;save();renderBizDetail();toast('已更新判断')}
+function openPrepModal(){
+  openModal('编辑诉前准备判断说明',`<div class="field"><label>说明（如：建议采取的措施、准备事项）</label><textarea id="pp-note" style="min-height:120px">${esc(curClient.prep.note)}</textarea></div>`,()=>{
+    curClient.prep.note=val('pp-note');save();renderBizDetail();toast('已保存');return true;
+  });
+}
+
+/* ==================== 法律费用管理 ==================== */
+const FEE_MODULES={
+  regular:{title:'常法/坐班服务时长 + 服务内容',icon:'🕐',color:'#eff6ff'},
+  service:{title:'常务服务费 / 专项法律服务费',icon:'💼',color:'#eef2ff'},
+  casefee:{title:'案件相关费用',icon:'⚖️',color:'#f0fdfa'}
+};
+let feeMod=null;
+function showFeeHome(){
+  feeMod=null;
+  document.getElementById('fee-home').classList.remove('hidden');
+  document.getElementById('fee-module').classList.add('hidden');
+  document.getElementById('fee-crumb2').textContent='';document.getElementById('feeAddBtn').classList.add('hidden');
+  const sum={
+    regular:DB.fees.regular.reduce((s,x)=>s+Number(x.hours||0),0),
+    service:DB.fees.service.reduce((s,x)=>s+Number(x.amount||0),0),
+    casefee:DB.fees.casefee.reduce((s,x)=>s+Number(x.amount||0),0)};
+  document.getElementById('feeCards').innerHTML=Object.keys(FEE_MODULES).map(k=>`
+   <div class="fee-card" onclick="openFeeModule('${k}')">
+     <div class="fi" style="background:${FEE_MODULES[k].color}">${FEE_MODULES[k].icon}</div>
+     <h3>${FEE_MODULES[k].title}</h3>
+     <p>${k==='regular'?'记录常年法律顾问/坐班律师的服务时长与具体服务内容':k==='service'?'常务法律顾问服务费与专项法律服务费的登记与统计':'诉讼、执行等案件相关费用的登记，可自行选择是否关联立项信息（诉讼案件）'}</p>
+     <div class="amt num">${k==='regular'?sum[k]+' <span style="font-size:13px;color:var(--sub);font-weight:400">小时</span>':'¥ '+money(sum[k])}</div>
+     <div class="sub" style="font-size:12px;margin-top:4px">${DB.fees[k].length} 条记录，点击进入管理 →</div>
+   </div>`).join('');
+}
+function openFeeModule(k){
+  feeMod=k;
+  document.getElementById('fee-home').classList.add('hidden');
+  document.getElementById('fee-module').classList.remove('hidden');
+  document.getElementById('fee-crumb2').textContent='/ '+FEE_MODULES[k].title;
+  document.getElementById('feeModuleTitle').textContent=FEE_MODULES[k].title;
+  const addBtn=document.getElementById('feeAddBtn');
+  addBtn.classList.remove('hidden');
+  addBtn.onclick=()=>openFeeModal(k);
+  renderFeeTable();
+}
+function renderFeeTable(){
+  const k=feeMod,w=document.getElementById('feeTableWrap');
+  let head='',rows='',foot='';
+  if(k==='regular'){
+    head='<tr><th>服务月份</th><th>服务人员</th><th>服务方式</th><th class="num">时长（小时）</th><th>服务内容</th><th>操作</th></tr>';
+    rows=DB.fees.regular.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.lawyer)}</td><td><span class="tag ${x.mode==='坐班'?'tag-orange':'tag-blue'}">${esc(x.mode)}</span></td><td class="num">${x.hours}</td><td>${esc(x.content)}</td><td><button class="btn btn-sm" onclick="openFeeModal('regular','${x.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delFee('regular','${x.id}')">删除</button></td></tr>`).join('');
+    foot=`<tr style="background:#fafbfc;font-weight:600"><td colspan="3">合计时长</td><td class="num">${DB.fees.regular.reduce((s,x)=>s+Number(x.hours||0),0)}</td><td colspan="2"></td></tr>`;
+  }else if(k==='service'){
+    head='<tr><th>日期</th><th>费用类型</th><th>客户/对象</th><th>费用项目</th><th class="num">金额（元）</th><th>备注</th><th>操作</th></tr>';
+    rows=DB.fees.service.map(x=>`<tr><td>${esc(x.date)}</td><td><span class="tag ${x.type==='专项'?'tag-orange':'tag-blue'}">${esc(x.type)}</span></td><td>${esc(x.client)}</td><td>${esc(x.item)}</td><td class="num">${money(x.amount)}</td><td>${esc(x.note)}</td><td><button class="btn btn-sm" onclick="openFeeModal('service','${x.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delFee('service','${x.id}')">删除</button></td></tr>`).join('');
+    foot=`<tr style="background:#fafbfc;font-weight:600"><td colspan="4">合计金额</td><td class="num">${money(DB.fees.service.reduce((s,x)=>s+Number(x.amount||0),0))}</td><td colspan="2"></td></tr>`;
+  }else{
+    head='<tr><th>日期</th><th>费用项目</th><th class="num">金额（元）</th><th>备注</th><th>关联立项信息</th><th>操作</th></tr>';
+    rows=DB.fees.casefee.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.item)}</td><td class="num">${money(x.amount)}</td><td>${esc(x.note)}</td>
+      <td>${x.linked&&x.caseId?`<span class="link" onclick="go('lit');setTimeout(()=>openCase('${x.caseId}'),50)">📎 ${esc(caseName(x.caseId)).slice(0,18)}${caseName(x.caseId).length>18?'…':''}</span>`:'<span class="sub">— 未关联</span>'}</td>
+      <td><button class="btn btn-sm" onclick="openFeeModal('casefee','${x.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delFee('casefee','${x.id}')">删除</button></td></tr>`).join('');
+    foot=`<tr style="background:#fafbfc;font-weight:600"><td colspan="2">合计金额</td><td class="num">${money(DB.fees.casefee.reduce((s,x)=>s+Number(x.amount||0),0))}</td><td colspan="3"></td></tr>`;
+  }
+  w.innerHTML=`<table class="tbl"><thead>${head}</thead><tbody>${rows||'<tr><td colspan="7"><div class="empty">暂无记录，点击右上角「新增记录」创建</div></td></tr>'}</tbody><tfoot>${foot}</tfoot></table>`;
+}
+function openFeeModal(k,id){
+  const arr=DB.fees[k]; const x=id?arr.find(a=>a.id===id):(k==='regular'?{date:today().slice(0,7),lawyer:'',mode:'常法',hours:'',client:'公司本部',content:''}:k==='service'?{date:today(),type:'常务',client:'',item:'',amount:'',note:''}:{date:today(),item:'',amount:'',note:'',caseId:'',linked:false});
+  let body='';
+  if(k==='regular')body=`<div class="frm-row">
+    <div class="field"><label>服务月份 *</label><input id="fm-month" type="month" value="${x.date}"></div>
+    <div class="field"><label>服务人员 *</label><input id="fm-lawyer" value="${esc(x.lawyer)}" placeholder="如：王律师"></div>
+    <div class="field"><label>服务方式</label><select id="fm-mode">${['常法','坐班'].map(m=>`<option ${x.mode===m?'selected':''}>${m}</option>`).join('')}</select></div>
+    <div class="field"><label>时长（小时）*</label><input id="fm-hours" type="number" step="0.5" class="num" style="text-align:right" value="${x.hours}"></div>
+    <div class="field full"><label>服务内容 *</label><textarea id="fm-content" placeholder="如：合同审核X份、法律咨询X次、出具法律意见书">${esc(x.content)}</textarea></div></div>`;
+  else if(k==='service')body=`<div class="frm-row">
+    <div class="field"><label>日期 *</label><input id="fm-date" type="date" value="${x.date}"></div>
+    <div class="field"><label>费用类型 *</label><select id="fm-type">${['常务','专项'].map(t=>`<option ${x.type===t?'selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="field"><label>客户/服务对象</label><input id="fm-client" value="${esc(x.client)}"></div>
+    <div class="field"><label>金额（元）*</label><input id="fm-amount" type="number" step="0.01" class="num" style="text-align:right" value="${x.amount}"></div>
+    <div class="field full"><label>费用项目 *</label><input id="fm-item" value="${esc(x.item)}" placeholder="如：2026年度常年法律顾问费"></div>
+    <div class="field full"><label>备注</label><input id="fm-note" value="${esc(x.note)}"></div></div>`;
+  else body=`<div class="frm-row">
+    <div class="field"><label>日期 *</label><input id="fm-date" type="date" value="${x.date}"></div>
+    <div class="field"><label>金额（元）*</label><input id="fm-amount" type="number" step="0.01" class="num" style="text-align:right" value="${x.amount}"></div>
+    <div class="field full"><label>费用项目 *</label><input id="fm-item" value="${esc(x.item)}" placeholder="如：诉讼费 / 保全费 / 律师代理费"></div>
+    <div class="field full"><label>备注</label><input id="fm-note" value="${esc(x.note)}"></div>
+    <div class="field full"><label>关联立项信息（可选）</label><select id="fm-case"><option value="">— 不关联 —</option>${DB.cases.map(c=>`<option value="${c.id}" ${x.caseId===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div></div>`;
+  openModal((id?'编辑':'新增')+'记录',body,()=>{
+    let obj;
+    if(k==='regular'){
+      const hours=parseFloat(val('fm-hours')),content=val('fm-content'),lawyer=val('fm-lawyer');
+      if(!lawyer)return setErr('fm-lawyer','请填写服务人员');
+      if(isNaN(hours))return setErr('fm-hours','请填写正确时长');
+      if(!content)return setErr('fm-content','请填写服务内容');
+      obj={date:val('fm-month')||today().slice(0,7),lawyer,mode:val('fm-mode'),hours,content};
+    }else{
+      const item=val('fm-item'),amt=parseFloat(val('fm-amount'));
+      if(!item)return setErr('fm-item','请填写费用项目');
+      if(isNaN(amt))return setErr('fm-amount','请填写正确金额');
+      obj={date:val('fm-date')||today(),item,amount:amt,note:val('fm-note')};
+      if(k==='service'){obj.type=val('fm-type');obj.client=val('fm-client')}
+      else{const cid=val('fm-case');obj.caseId=cid;obj.linked=!!cid}
+    }
+    if(id)Object.assign(arr.find(a=>a.id===id),obj); else arr.push({id:uid(),...obj});
+    save();renderFeeTable();showFeeHome&&feeMod&&0; toast('已保存');return true;
+  });
+}
+function delFee(k,id){if(!confirm('确定删除该记录？'))return;DB.fees[k]=DB.fees[k].filter(x=>x.id!==id);save();renderFeeTable();toast('已删除')}
+
+/* ==================== 数据导入导出 ==================== */
+function exportData(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='法务管理系统数据_'+today()+'.json';a.click();
+  toast('数据已导出');
+}
+function importData(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{DB=JSON.parse(r.result);save();renderDash();toast('数据导入成功')}catch(err){toast('文件格式错误')}};
+  r.readAsText(f);e.target.value='';
+}
+
+/* ==================== 启动 ==================== */
+load();
+sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+async function cloudLoad(){
+  try{
+    const {data,error}=await sb.from('app_data').select('data').eq('id',1).maybeSingle();
+    if(!error){
+      cloudReady=true;
+      if(data&&data.data&&data.data.cases){DB=data.data;localStorage.setItem(DB_KEY,JSON.stringify(DB));console.log('已从云端加载数据')}
+      else{syncToCloud()}
+    }else{console.warn('云端读取失败：',error.message)}
+  }catch(e){console.warn('云端连接失败，本次使用本地数据',e)}
+}
+(async function init(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(session){sessionStorage.setItem('lms_user',session.user.email);document.getElementById('whoName').textContent='👤 '+session.user.email;await cloudLoad();go('dash')}
+  document.getElementById('lg-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+  document.getElementById('lg-user').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+})();
+</script>
+</body>
+</html>
