@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>法务管理系统</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --primary:#2563eb; --primary-d:#1e40af; --bg:#f7f8fa; --card:#ffffff;
@@ -278,7 +279,12 @@ table.tbl tbody tr:hover{background:#f8faff}
 <script>
 /* ==================== 数据层 ==================== */
 const DB_KEY = 'legalms_v2';
+const SUPABASE_URL = 'https://hxfncjuxipxfmrurktie.supabase.co/rest/v1/';  
+const SUPABASE_KEY = 'sb_publishable_R1pyXsVJFskOax0s1-ka6Q_4sGctz_E';  
 let DB = null;
+let sb = null;
+let cloudReady = false;
+let saveTimer = null;
 function uid(){return Date.now().toString(36) + Math.random().toString(36).slice(2,7)}
 function today(){return new Date().toISOString().slice(0,10)}
 function money(n){return (Number(n)||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}
@@ -295,8 +301,19 @@ function seed(){
     fees:{regular:[],service:[],casefee:[]}
   };
 }
-function load(){try{DB=JSON.parse(localStorage.getItem(DB_KEY))}catch(e){} if(!DB||!DB.cases){DB=seed();save();}}
-function save(){localStorage.setItem(DB_KEY,JSON.stringify(DB))}
+function load(){try{DB=JSON.parse(localStorage.getItem(DB_KEY))}catch(e){} if(!DB||!DB.cases){DB=seed();localStorage.setItem(DB_KEY,JSON.stringify(DB))}}
+function save(){
+  localStorage.setItem(DB_KEY,JSON.stringify(DB));
+  if(!cloudReady)return;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(syncToCloud,800);
+}
+async function syncToCloud(){
+  try{
+    const {error}=await sb.from('app_data').upsert({id:1,data:DB,updated_at:new Date().toISOString()});
+    if(error)console.warn('云端保存失败：',error.message);else console.log('已同步到云端');
+  }catch(e){console.warn('云端保存失败：',e)}
+}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),1800)}
 function caseName(id){const c=DB.cases.find(x=>x.id===id);return c?c.name:'—'}
 
@@ -786,7 +803,18 @@ function importData(e){
 
 /* ==================== 启动 ==================== */
 load();
-(function init(){
+(async function init(){
+  try{
+    if(SUPABASE_URL.startsWith('https://') && SUPABASE_KEY.length>20){
+      sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+      const {data,error}=await sb.from('app_data').select('data').eq('id',1).maybeSingle();
+      if(!error){
+        cloudReady=true;
+        if(data&&data.data&&data.data.cases){DB=data.data;localStorage.setItem(DB_KEY,JSON.stringify(DB));console.log('已从云端加载数据')}
+        else{syncToCloud()}
+      }
+    }
+  }catch(e){console.warn('云端连接失败，本次使用本地数据',e)}
   const u=sessionStorage.getItem('lms_user');
   if(u){document.getElementById('whoName').textContent='👤 '+u;go('dash')}
   document.getElementById('lg-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
