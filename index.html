@@ -54,7 +54,7 @@ body{font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-ser
 .dash-wrap{height:calc(100vh - 60px);padding:24px;display:flex;flex-direction:column;gap:24px}
 .dash-head{display:flex;align-items:baseline;justify-content:space-between}
 .dash-head h2{font-size:20px}
-.dash-grid{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:1fr;gap:24px}
+.dash-grid{flex:1;display:grid;grid-auto-flow:column;grid-template-rows:1fr;grid-auto-columns:calc((100% - 72px)/4);gap:24px;overflow-x:auto;padding-bottom:8px}
 .dash-card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:.2s;padding:32px;text-align:center}
 .dash-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:#c7d7fe}
 .dash-card.dev{cursor:default;background:repeating-linear-gradient(45deg,#fff,#fff 12px,#fafafa 12px,#fafafa 24px)}
@@ -64,7 +64,7 @@ body{font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-ser
 .dash-card h3{font-size:18px}
 .dash-card p{color:var(--sub);font-size:13px;line-height:1.7}
 .dash-card .cnt{font-size:12px;color:var(--sub)}
-@media(max-width:1100px){.dash-grid{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr)}}
+@media(max-width:1100px){.dash-grid{grid-auto-columns:calc((100% - 24px)/2)}}
 /* ---------- 通用页面 ---------- */
 .page{padding:24px 28px;max-width:1500px;margin:0 auto}
 .page-head{display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap}
@@ -139,6 +139,10 @@ table.tbl tbody tr:hover{background:#f8faff}
 /* toast */
 #toast{position:fixed;top:76px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 22px;border-radius:8px;font-size:13px;z-index:200;opacity:0;transition:.25s;pointer-events:none}
 #toast.show{opacity:1}
+.mod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:1100px){.mod-grid{grid-template-columns:repeat(2,1fr)}}
+.mod-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:var(--shadow)}
+.mod-card h4{font-size:14px;margin:0;display:flex;align-items:center;gap:8px}
 .notice-bar{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:10px;padding:10px 16px;font-size:13px;margin-bottom:16px;display:flex;gap:10px;align-items:center}
 </style>
 </head>
@@ -193,10 +197,22 @@ table.tbl tbody tr:hover{background:#f8faff}
         <p>常法/坐班服务、常务/专项服务费<br>案件相关费用</p>
         <span class="cnt" id="cnt-fee"></span>
       </div>
+      <div class="dash-card" onclick="go('fuping')">
+        <div class="dash-icon" style="background:#fff7ed">🏗️</div>
+        <h3>富平99项目相关</h3>
+        <p>2769号地块 / 2779号地块<br>土地性质 · 建筑性质 · 项目记录</p>
+        <span class="cnt" id="cnt-fuping"></span>
+      </div>
+      <div class="dash-card" onclick="go('seal')">
+        <div class="dash-icon" style="background:#fef3c7">🔖</div>
+        <h3>印章、档案管理</h3>
+        <p>印章台账：性质 · 持有人 · 使用频率<br>电子档案 / 档案室</p>
+        <span class="cnt" id="cnt-seal2"></span>
+      </div>
       <div class="dash-card dev">
         <div class="dash-icon di-gray">🚧</div>
         <h3>开发中</h3>
-        <p>更多子系统模块<br>正在规划中，敬请期待</p>
+        <p>如有需求<br>请告知系统管理员进行新增</p>
         <span class="cnt">敬请期待</span>
       </div>
     </div>
@@ -275,6 +291,71 @@ table.tbl tbody tr:hover{background:#f8faff}
   </div>
 </div>
 
+<!-- ================= 富平99项目相关 ================= -->
+<div id="view-fuping" class="view hidden">
+  <div class="topbar">
+    <span class="link" onclick="backPrev()">← 返回上一级</span>
+    <span class="crumb">富平99项目相关</span><span class="sub" id="fp-crumb2"></span>
+    <span class="spacer"></span>
+    <button class="btn btn-sm hidden" id="fpAddModBtn" onclick="openModModal()">＋ 新增功能模块</button>
+  </div>
+  <div class="page" id="fp-home">
+    <div class="page-head"><h2>地块看板</h2><span class="sub">点击进入对应地块的功能模块子看板</span></div>
+    <div class="fee-grid" style="grid-template-columns:repeat(2,1fr)" id="fpPlots"></div>
+  </div>
+  <div class="page hidden" id="fp-plot">
+    <div class="page-head"><h2 id="fpPlotTitle"></h2><span class="sub">各模块记录时间、内容、时间线、待办事宜等，「＋」快速新增</span></div>
+    <div class="mod-grid" id="fpMods"></div>
+  </div>
+  <div class="page hidden" id="fp-module">
+    <div class="page-head">
+      <h2 id="fpModTitle"></h2>
+      <span class="spacer"></span>
+      <button class="btn btn-sm btn-primary" onclick="openFpRecModal()">＋ 新增记录</button>
+      <button class="btn btn-sm btn-danger" onclick="delFpModule()">删除模块</button>
+    </div>
+    <div class="panel"><div class="panel-bd" style="padding:0" id="fpRecWrap"></div></div>
+  </div>
+</div>
+
+<!-- ================= 印章、档案管理 ================= -->
+<div id="view-seal" class="view hidden">
+  <div class="topbar">
+    <span class="link" onclick="backPrev()">← 返回上一级</span>
+    <span class="crumb">印章、档案管理</span><span class="sub" id="seal-crumb2"></span>
+  </div>
+  <div class="page" id="seal-home">
+    <div class="page-head"><h2>请选择管理模块</h2></div>
+    <div class="fee-grid" style="grid-template-columns:repeat(2,1fr)">
+      <div class="fee-card" onclick="openSealModule('seal')">
+        <div class="fi" style="background:#fef3c7">🔖</div>
+        <h3>印章管理</h3>
+        <p>公司印章台账：印章性质、现持有人、交接时间、使用频率</p>
+        <div class="amt" style="font-size:16px" id="cnt-seal"></div>
+      </div>
+      <div class="fee-card" onclick="openSealModule('archive')">
+        <div class="fi" style="background:#f0f9ff">🗂️</div>
+        <h3>档案管理</h3>
+        <p>电子档案 / 档案室（暂未启用，结构已预留，可自定义设置）</p>
+        <div class="amt" style="font-size:16px" id="cnt-archive"></div>
+      </div>
+    </div>
+  </div>
+  <div class="page hidden" id="seal-module">
+    <div class="page-head"><h2 id="sealModuleTitle"></h2>
+      <span class="spacer"></span>
+      <button class="btn btn-sm btn-primary" id="sealAddBtn" onclick="openSealRecModal()">＋ 新增记录</button>
+    </div>
+    <div class="tabs" id="archiveTabs" style="display:none"></div>
+    <div class="notice-bar" id="archiveNotice" style="display:none">⚠️ 该模块暂未启用，结构已预留：现在即可新增记录，字段后续如需调整请联系系统管理员。</div>
+    <div class="panel"><div class="panel-bd" style="padding:0" id="sealTableWrap"></div></div>
+    <div class="panel" id="archiveNotePanel" style="display:none">
+      <div class="panel-hd"><h3>模块说明（可自定义设置）</h3><span class="spacer"></span><button class="btn btn-sm" onclick="editArchiveNote()">✎ 编辑说明</button></div>
+      <div class="panel-bd"><div class="info-block" style="margin-bottom:0"><div class="txt" id="archiveNote"></div></div></div>
+    </div>
+  </div>
+</div>
+
 <div id="modalRoot"></div>
 
 <script>
@@ -299,10 +380,24 @@ function seed(){
   return {
     cases:[mk('易合坊'),mk('腾跃'),mk('游小方'),mk('潘佳亮')],
     clients:[mkc('篮羽球场'),mkc('茜卡'),mkc('世瀛')],
-    fees:{regular:[],service:[],casefee:[]}
+    fees:{regular:[],service:[],casefee:[]},
+    fuping:{
+      '2769':[{id:'m2769-1',name:'2769号土地性质',records:[]},{id:'m2769-2',name:'2769号建筑性质',records:[]},{id:'m2769-3',name:'威睿固',records:[]},{id:'m2769-4',name:'雁淼',records:[]},{id:'m2769-5',name:'时代人才',records:[]},{id:'m2769-6',name:'收储谈判会议',records:[]}],
+      '2779':[{id:'m2779-1',name:'2779号土地性质',records:[]},{id:'m2779-2',name:'2779号建筑性质',records:[]},{id:'m2779-3',name:'收储谈判会议',records:[]}]
+    },
+    seals:[],
+    archives:{electronic:{note:'',records:[]},room:{note:'',records:[]}}
   };
 }
-function load(){try{DB=JSON.parse(localStorage.getItem(DB_KEY))}catch(e){} if(!DB||!DB.cases){DB=seed();localStorage.setItem(DB_KEY,JSON.stringify(DB))}}
+function load(){try{DB=JSON.parse(localStorage.getItem(DB_KEY))}catch(e){} if(!DB||!DB.cases){DB=seed();localStorage.setItem(DB_KEY,JSON.stringify(DB))}ensureShape()}
+function ensureShape(){
+  if(!DB)return;
+  if(!DB.fuping)DB.fuping={'2769':[],'2779':[]};
+  ['2769','2779'].forEach(p=>{if(!Array.isArray(DB.fuping[p]))DB.fuping[p]=[]});
+  if(!DB.seals)DB.seals=[];
+  if(!DB.archives)DB.archives={electronic:{note:'',records:[]},room:{note:'',records:[]}};
+  ['electronic','room'].forEach(k=>{if(!DB.archives[k])DB.archives[k]={note:'',records:[]};if(!Array.isArray(DB.archives[k].records))DB.archives[k].records=[]});
+}
 function save(){
   localStorage.setItem(DB_KEY,JSON.stringify(DB));
   if(!cloudReady)return;
@@ -319,7 +414,7 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 function caseName(id){const c=DB.cases.find(x=>x.id===id);return c?c.name:'—'}
 
 /* ==================== 视图导航 ==================== */
-const VIEWS=['view-login','view-dash','view-lit','view-biz','view-fee'];
+const VIEWS=['view-login','view-dash','view-lit','view-biz','view-fee','view-fuping','view-seal'];
 /* 返回上一级：详情页→列表页→工作台 */
 function backPrev(){
   if(!document.getElementById('view-lit').classList.contains('hidden')){
@@ -331,6 +426,13 @@ function backPrev(){
   if(!document.getElementById('view-fee').classList.contains('hidden')){
     if(feeMod){showFeeHome();window.scrollTo(0,0);return}
   }
+  if(!document.getElementById('view-fuping').classList.contains('hidden')){
+    if(!document.getElementById('fp-module').classList.contains('hidden')){showFpPlot(curPlot);window.scrollTo(0,0);return}
+    if(!document.getElementById('fp-plot').classList.contains('hidden')){showFpHome();window.scrollTo(0,0);return}
+  }
+  if(!document.getElementById('view-seal').classList.contains('hidden')){
+    if(!document.getElementById('seal-module').classList.contains('hidden')){showSealHome();window.scrollTo(0,0);return}
+  }
   go('dash');
 }
 function go(v){
@@ -340,6 +442,8 @@ function go(v){
   if(v==='lit'){showLitList();}
   if(v==='biz'){showBizList();}
   if(v==='fee'){showFeeHome();}
+  if(v==='fuping'){showFpHome();}
+  if(v==='seal'){showSealHome();}
 }
 async function doLogin(){
   const email=val('lg-user'),pw=document.getElementById('lg-pass').value;
@@ -369,6 +473,10 @@ function renderDash(){
   document.getElementById('cnt-biz').textContent='分析中客户 '+DB.clients.length+' 家';
   const cf=DB.fees.casefee.reduce((s,x)=>s+Number(x.amount||0),0);
   document.getElementById('cnt-fee').textContent='费用记录 '+(DB.fees.regular.length+DB.fees.service.length+DB.fees.casefee.length)+' 条';
+  const fpMods=Object.values(DB.fuping).reduce((s,a)=>s+a.length,0);
+  const fpRecs=Object.values(DB.fuping).reduce((s,a)=>s+a.reduce((x,m)=>x+m.records.length,0),0);
+  document.getElementById('cnt-fuping').textContent='功能模块 '+fpMods+' 个 · 记录 '+fpRecs+' 条';
+  document.getElementById('cnt-seal2').textContent='在管印章 '+DB.seals.length+' 枚 · 档案记录 '+(DB.archives.electronic.records.length+DB.archives.room.records.length)+' 条';
 }
 
 /* ==================== 通用弹窗 ==================== */
@@ -804,6 +912,188 @@ function openFeeModal(k,id){
 }
 function delFee(k,id){if(!confirm('确定删除该记录？'))return;DB.fees[k]=DB.fees[k].filter(x=>x.id!==id);save();renderFeeTable();toast('已删除')}
 
+
+/* ==================== 富平99项目相关 ==================== */
+const FP_PLOTS=[['2769','2769号地块'],['2779','2779号地块']];
+let curPlot=null, curFpMod=null;
+function showFpHome(){
+  curPlot=null;curFpMod=null;
+  document.getElementById('fp-home').classList.remove('hidden');
+  document.getElementById('fp-plot').classList.add('hidden');
+  document.getElementById('fp-module').classList.add('hidden');
+  document.getElementById('fp-crumb2').textContent='';document.getElementById('fpAddModBtn').classList.add('hidden');
+  document.getElementById('fpPlots').innerHTML=FP_PLOTS.map(p=>{
+    const mods=DB.fuping[p[0]]||[];const recs=mods.reduce((s,m)=>s+m.records.length,0);
+    return `<div class="fee-card" onclick="openPlot('${p[0]}')">
+      <div class="fi" style="background:#fff7ed">🗺️</div>
+      <h3>${p[1]}</h3>
+      <p>功能模块 ${mods.length} 个<br>已录记录 ${recs} 条</p>
+      <div class="amt" style="font-size:18px">${mods.length} 个模块 →</div></div>`;
+  }).join('');
+}
+function openPlot(pid){
+  curPlot=pid;curFpMod=null;
+  document.getElementById('fp-home').classList.add('hidden');
+  document.getElementById('fp-plot').classList.remove('hidden');
+  document.getElementById('fp-module').classList.add('hidden');
+  const pname=FP_PLOTS.find(p=>p[0]===pid)[1];
+  document.getElementById('fp-crumb2').textContent='/ '+pname;
+  document.getElementById('fpAddModBtn').classList.remove('hidden');
+  document.getElementById('fpPlotTitle').textContent=pname+' · 功能模块';
+  renderFpMods();
+}
+function showFpPlot(pid){openPlot(pid)}
+function renderFpMods(){
+  const mods=DB.fuping[curPlot]||[];
+  if(!mods.length){document.getElementById('fpMods').innerHTML='<div class="empty" style="grid-column:1/-1">暂无功能模块，点右上角「新增功能模块」创建</div>';return}
+  document.getElementById('fpMods').innerHTML=mods.map(m=>{
+    const last=m.records.length?[...m.records].sort((a,b)=>b.time.localeCompare(a.time))[0].time:'—';
+    return `<div class="mod-card">
+    <h4>📌 ${esc(m.name)}<span style="flex:1"></span><button class="btn btn-sm btn-primary" onclick="openFpMod('${m.id}')">进入</button></h4>
+    <div class="sub" style="font-size:12px;margin:10px 0">记录 ${m.records.length} 条 · 最近更新：${esc(last)}</div>
+    <button class="btn btn-sm" onclick="openFpRecModal('${m.id}')">＋ 新增记录</button>
+    <button class="btn btn-sm btn-danger" style="margin-left:6px" onclick="delFpModule('${m.id}')">删除模块</button>
+   </div>`;
+  }).join('');
+}
+function openFpMod(mid){
+  curFpMod=(DB.fuping[curPlot]||[]).find(m=>m.id===mid);if(!curFpMod)return;
+  document.getElementById('fp-plot').classList.add('hidden');
+  document.getElementById('fp-module').classList.remove('hidden');
+  const pname=FP_PLOTS.find(p=>p[0]===curPlot)[1];
+  document.getElementById('fp-crumb2').textContent='/ '+pname+' / '+curFpMod.name;
+  renderFpRecords();
+}
+function renderFpRecords(){
+  const m=curFpMod;
+  document.getElementById('fpModTitle').textContent=m.name;
+  let html='<table class="tbl"><colgroup><col style="width:11%"><col style="width:27%"><col style="width:21%"><col style="width:20%"><col style="width:14%"><col style="width:7%"></colgroup>';
+  html+='<thead><tr><th>时间</th><th>内容</th><th>时间线</th><th>待办事宜</th><th>其他</th><th>操作</th></tr></thead><tbody>';
+  if(!m.records.length)html+='<tr><td colspan="6"><div class="empty">暂无记录，点右上角「新增记录」创建</div></td></tr>';
+  [...m.records].sort((a,b)=>b.time.localeCompare(a.time)).forEach(r=>{
+    html+=`<tr><td>${esc(r.time)}</td><td>${esc(r.content)}</td><td>${esc(r.timeline)}</td><td>${esc(r.todo)}</td><td>${esc(r.other)}</td><td><button class="btn btn-sm" onclick="openFpRecModal(null,'${r.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delFpRec('${r.id}')">删除</button></td></tr>`;
+  });
+  document.getElementById('fpRecWrap').innerHTML=html+'</tbody></table>';
+}
+function openFpRecModal(mid,rid){
+  if(mid)curFpMod=(DB.fuping[curPlot]||[]).find(m=>m.id===mid);
+  if(!curFpMod){toast('请先进入功能模块');return}
+  const r=rid?curFpMod.records.find(x=>x.id===rid):{time:today(),content:'',timeline:'',todo:'',other:''};
+  openModal(rid?'编辑记录':'新增记录',`<div class="frm-row">
+   <div class="field"><label>时间 *</label><input id="fr-time" type="date" value="${r.time}"></div>
+   <div class="field full"><label>内容 *</label><textarea id="fr-content">${esc(r.content)}</textarea></div>
+   <div class="field full"><label>时间线</label><textarea id="fr-timeline" placeholder="该事项处于整体工作的时间线位置 / 阶段">${esc(r.timeline)}</textarea></div>
+   <div class="field full"><label>待办事宜</label><textarea id="fr-todo">${esc(r.todo)}</textarea></div>
+   <div class="field full"><label>其他</label><textarea id="fr-other">${esc(r.other)}</textarea></div></div>`,()=>{
+    const content=val('fr-content');if(!content)return setErr('fr-content','请填写内容');
+    const obj={id:rid||uid(),time:val('fr-time')||today(),content,timeline:val('fr-timeline'),todo:val('fr-todo'),other:val('fr-other')};
+    if(rid){const i=curFpMod.records.findIndex(x=>x.id===rid);curFpMod.records[i]=obj}else curFpMod.records.push(obj);
+    save();
+    if(!document.getElementById('fp-module').classList.contains('hidden'))renderFpRecords();
+    if(!document.getElementById('fp-plot').classList.contains('hidden'))renderFpMods();
+    toast('已保存');return true;
+  });
+}
+function delFpRec(rid){if(!confirm('确定删除该记录？'))return;curFpMod.records=curFpMod.records.filter(r=>r.id!==rid);save();renderFpRecords();toast('已删除')}
+function openModModal(){
+  openModal('新增功能模块',`<div class="field"><label>模块名称 *</label><input id="nm-name" placeholder="如：XX公司 / 规划指标 / 会议纪要"></div>`,()=>{
+    const name=val('nm-name');if(!name)return setErr('nm-name','请填写模块名称');
+    DB.fuping[curPlot].push({id:uid(),name,records:[]});
+    save();renderFpMods();toast('已新增模块');return true;
+  });
+}
+function delFpModule(mid){
+  const target=mid||(curFpMod&&curFpMod.id);if(!target||!curPlot)return;
+  if(!confirm('确定删除该功能模块及其全部记录？'))return;
+  DB.fuping[curPlot]=DB.fuping[curPlot].filter(m=>m.id!==target);
+  save();
+  if(curFpMod&&curFpMod.id===target){curFpMod=null;showFpPlot(curPlot)}
+  else renderFpMods();
+  toast('已删除');
+}
+
+/* ==================== 印章、档案管理 ==================== */
+let sealMod=null, archTab='electronic';
+function showSealHome(){
+  sealMod=null;
+  document.getElementById('seal-home').classList.remove('hidden');
+  document.getElementById('seal-module').classList.add('hidden');
+  document.getElementById('seal-crumb2').textContent='';
+  document.getElementById('cnt-seal').textContent=DB.seals.length+' 枚在管印章';
+  document.getElementById('cnt-archive').textContent='电子档案 '+DB.archives.electronic.records.length+' 条 · 档案室 '+DB.archives.room.records.length+' 条';
+}
+function openSealModule(k){
+  sealMod=k;
+  document.getElementById('seal-home').classList.add('hidden');
+  document.getElementById('seal-module').classList.remove('hidden');
+  document.getElementById('seal-crumb2').textContent='/ '+(k==='seal'?'印章管理':'档案管理');
+  document.getElementById('sealModuleTitle').textContent=k==='seal'?'印章管理':'档案管理';
+  const addBtn=document.getElementById('sealAddBtn');
+  addBtn.textContent=k==='seal'?'＋ 新增印章':'＋ 新增记录';
+  const isArch=k==='archive';
+  document.getElementById('archiveTabs').style.display=isArch?'flex':'none';
+  document.getElementById('archiveNotice').style.display=isArch?'flex':'none';
+  document.getElementById('archiveNotePanel').style.display=isArch?'block':'none';
+  if(isArch)renderArchiveTabs();
+  renderSealTable();
+}
+function renderArchiveTabs(){
+  document.getElementById('archiveTabs').innerHTML=[['electronic','电子档案'],['room','档案室']].map(t=>`<div class="tab ${archTab===t[0]?'on':''}" onclick="archTab='${t[0]}';renderArchiveTabs();renderSealTable()">${t[1]}</div>`).join('');
+  document.getElementById('archiveNote').textContent=DB.archives[archTab].note||'（未设置说明，点右上角「编辑说明」自定义）';
+}
+function renderSealTable(){
+  const w=document.getElementById('sealTableWrap');
+  if(sealMod==='seal'){
+    let html='<table class="tbl"><colgroup><col style="width:20%"><col style="width:15%"><col style="width:17%"><col style="width:13%"><col style="width:13%"><col style="width:12%"></colgroup>';
+    html+='<thead><tr><th>公司</th><th>印章性质</th><th>印章现持有人</th><th>交接时间</th><th>使用频率</th><th>操作</th></tr></thead><tbody>';
+    if(!DB.seals.length)html+='<tr><td colspan="6"><div class="empty">暂无印章记录，点右上角「新增印章」创建</div></td></tr>';
+    DB.seals.forEach(s=>{html+=`<tr><td>${esc(s.company)}</td><td><span class="tag tag-blue">${esc(s.type)}</span></td><td>${esc(s.holder)}</td><td>${esc(s.handover)}</td><td><span class="tag ${s.freq==='高'?'tag-red':s.freq==='中'?'tag-orange':'tag-gray'}">${esc(s.freq)}</span></td><td><button class="btn btn-sm" onclick="openSealRecModal('${s.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delSealRec('${s.id}')">删除</button></td></tr>`});
+    w.innerHTML=html+'</tbody></table>';
+  }else{
+    const recs=DB.archives[archTab].records;
+    let html='<table class="tbl"><colgroup><col style="width:13%"><col style="width:45%"><col style="width:30%"><col style="width:12%"></colgroup>';
+    html+='<thead><tr><th>时间</th><th>内容</th><th>备注</th><th>操作</th></tr></thead><tbody>';
+    if(!recs.length)html+='<tr><td colspan="4"><div class="empty">暂无记录（模块暂未启用，可先添加说明，启用后直接录入）</div></td></tr>';
+    [...recs].sort((a,b)=>b.time.localeCompare(a.time)).forEach(r=>{
+      html+=`<tr><td>${esc(r.time)}</td><td>${esc(r.content)}</td><td>${esc(r.note)}</td><td><button class="btn btn-sm" onclick="openSealRecModal('${r.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delSealRec('${r.id}')">删除</button></td></tr>`});
+    w.innerHTML=html+'</tbody></table>';
+  }
+}
+function openSealRecModal(rid){
+  if(sealMod==='seal'){
+    const s=rid?DB.seals.find(x=>x.id===rid):{company:'',type:'公章',holder:'安子玥',handover:today(),freq:'中'};
+    openModal(rid?'编辑印章':'新增印章',`<div class="frm-row">
+     <div class="field"><label>公司 *</label><input id="sl-company" value="${esc(s.company)}" placeholder="如：富平XX置业有限公司"></div>
+     <div class="field"><label>印章性质 *</label><select id="sl-type">${['公章','合同章','人事专用章','财务章','发票章'].map(t=>`<option ${s.type===t?'selected':''}>${t}</option>`).join('')}</select></div>
+     <div class="field"><label>印章现持有人 *（默认安子玥，可修改）</label><input id="sl-holder" value="${esc(s.holder)}"></div>
+     <div class="field"><label>交接时间</label><input id="sl-handover" type="date" value="${s.handover}"></div>
+     <div class="field full"><label>印章使用频率</label><select id="sl-freq">${['高','中','低','基本不使用'].map(f=>`<option ${s.freq===f?'selected':''}>${f}</option>`).join('')}</select></div></div>`,()=>{
+      const company=val('sl-company');if(!company)return setErr('sl-company','请填写公司');
+      const obj={id:rid||uid(),company,type:val('sl-type'),holder:val('sl-holder')||'安子玥',handover:val('sl-handover'),freq:val('sl-freq')};
+      if(rid)Object.assign(DB.seals.find(x=>x.id===rid),obj);else DB.seals.push(obj);
+      save();renderSealTable();toast('已保存');return true;
+    });
+  }else{
+    const recs=DB.archives[archTab].records;
+    const r=rid?recs.find(x=>x.id===rid):{time:today(),content:'',note:''};
+    openModal(rid?'编辑记录':'新增记录',`<div class="frm-row">
+     <div class="field"><label>时间 *</label><input id="ar-time" type="date" value="${r.time}"></div>
+     <div class="field full"><label>内容 *</label><textarea id="ar-content">${esc(r.content)}</textarea></div>
+     <div class="field full"><label>备注</label><input id="ar-note" value="${esc(r.note)}"></div></div>`,()=>{
+      const content=val('ar-content');if(!content)return setErr('ar-content','请填写内容');
+      const obj={id:rid||uid(),time:val('ar-time')||today(),content,note:val('ar-note')};
+      if(rid)Object.assign(recs.find(x=>x.id===rid),obj);else recs.push(obj);
+      save();renderSealTable();toast('已保存');return true;
+    });
+  }
+}
+function delSealRec(rid){if(!confirm('确定删除该记录？'))return;if(sealMod==='seal')DB.seals=DB.seals.filter(x=>x.id!==rid);else DB.archives[archTab].records=DB.archives[archTab].records.filter(x=>x.id!==rid);save();renderSealTable();toast('已删除')}
+function editArchiveNote(){
+  openModal('编辑模块说明（自定义设置）',`<div class="field"><label>说明内容（启用前的用途、字段计划、负责人等）</label><textarea id="an-note" style="min-height:120px">${esc(DB.archives[archTab].note)}</textarea></div>`,()=>{
+    DB.archives[archTab].note=val('an-note');save();renderArchiveTabs();toast('已保存');return true;
+  });
+}
+
 /* ==================== 数据导入导出 ==================== */
 function exportData(){
   const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
@@ -813,7 +1103,7 @@ function exportData(){
 function importData(e){
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=()=>{try{DB=JSON.parse(r.result);save();renderDash();toast('数据导入成功')}catch(err){toast('文件格式错误')}};
+  r.onload=()=>{try{DB=JSON.parse(r.result);ensureShape();save();renderDash();toast('数据导入成功')}catch(err){toast('文件格式错误')}};
   r.readAsText(f);e.target.value='';
 }
 
@@ -825,7 +1115,7 @@ async function cloudLoad(){
     const {data,error}=await sb.from('app_data').select('data').eq('id',1).maybeSingle();
     if(!error){
       cloudReady=true;
-      if(data&&data.data&&data.data.cases){DB=data.data;localStorage.setItem(DB_KEY,JSON.stringify(DB));console.log('已从云端加载数据')}
+      if(data&&data.data&&data.data.cases){DB=data.data;localStorage.setItem(DB_KEY,JSON.stringify(DB));ensureShape();console.log('已从云端加载数据')}
       else{syncToCloud()}
     }else{console.warn('云端读取失败：',error.message)}
   }catch(e){console.warn('云端连接失败，本次使用本地数据',e)}
