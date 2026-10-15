@@ -151,10 +151,11 @@ table.tbl tbody tr:hover{background:#f8faff}
     <div class="login-logo">⚖️</div>
     <h1>法务管理系统</h1>
     <p>Legal Management System</p>
-    <div class="field"><label>用户名</label><input id="lg-user" placeholder="请输入用户名" autocomplete="off"></div>
-    <div class="field"><label>密码</label><input id="lg-pass" type="password" placeholder="请输入密码"></div>
+    <div class="field"><label>邮箱</label><input id="lg-user" type="email" placeholder="请输入邮箱" autocomplete="off"></div>
+    <div class="field"><label>密码</label><input id="lg-pass" type="password" placeholder="至少 6 位"></div>
     <button class="login-btn" onclick="doLogin()">登 录</button>
-    <div class="login-tip">演示账号：admin / admin（任意非空账号亦可登录）</div>
+    <button class="login-btn" onclick="doRegister()" style="background:#fff;color:var(--primary);border:1px solid var(--primary);margin-top:10px">注册新账号</button>
+    <div class="login-tip">首次使用请点「注册新账号」，注册成功自动登录，无需邮箱验证</div>
   </div>
 </div>
 
@@ -279,7 +280,7 @@ table.tbl tbody tr:hover{background:#f8faff}
 <script>
 /* ==================== 数据层 ==================== */
 const DB_KEY = 'legalms_v2';
-const SUPABASE_URL = 'https://hxfncjuxipxfmrurktie.supabase.co';
+const SUPABASE_URL = 'https://hxfncjuxipxfmrurktie.supabase.co/rest/v1/';  
 const SUPABASE_KEY = 'sb_publishable_R1pyXsVJFskOax0s1-ka6Q_4sGctz_E';  
 let DB = null;
 let sb = null;
@@ -340,14 +341,29 @@ function go(v){
   if(v==='biz'){showBizList();}
   if(v==='fee'){showFeeHome();}
 }
-function doLogin(){
-  const u=document.getElementById('lg-user').value.trim();
-  if(!u){toast('请输入用户名');return}
-  sessionStorage.setItem('lms_user',u);
-  document.getElementById('whoName').textContent='👤 '+u;
-  go('dash'); toast('欢迎，'+u);
+async function doLogin(){
+  const email=val('lg-user'),pw=document.getElementById('lg-pass').value;
+  if(!email||!pw){toast('请输入邮箱和密码');return}
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pw});
+  if(error){toast('登录失败：邮箱或密码错误');return}
+  enterApp(data.user);
 }
-function doLogout(){sessionStorage.removeItem('lms_user');go('view-login')&&0;VIEWS.forEach(id=>document.getElementById(id).classList.add('hidden'));document.getElementById('view-login').classList.remove('hidden')}
+async function doRegister(){
+  const email=val('lg-user'),pw=document.getElementById('lg-pass').value;
+  if(!email){toast('请输入邮箱');return}
+  if(pw.length<6){toast('密码至少 6 位');return}
+  const {data,error}=await sb.auth.signUp({email,password:pw});
+  if(error){toast('注册失败：'+error.message);return}
+  if(!data.session){toast('注册成功，请直接登录');return}
+  enterApp(data.user);
+}
+async function enterApp(user){
+  sessionStorage.setItem('lms_user',user.email);
+  document.getElementById('whoName').textContent='👤 '+user.email;
+  await cloudLoad();
+  go('dash'); toast('欢迎，'+user.email.split('@')[0]);
+}
+async function doLogout(){try{await sb.auth.signOut()}catch(e){} cloudReady=false;sessionStorage.removeItem('lms_user');VIEWS.forEach(id=>document.getElementById(id).classList.add('hidden'));document.getElementById('view-login').classList.remove('hidden')}
 function renderDash(){
   document.getElementById('cnt-lit').textContent='在办案件 '+DB.cases.length+' 件';
   document.getElementById('cnt-biz').textContent='分析中客户 '+DB.clients.length+' 家';
@@ -803,20 +819,20 @@ function importData(e){
 
 /* ==================== 启动 ==================== */
 load();
-(async function init(){
+sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+async function cloudLoad(){
   try{
-    if(SUPABASE_URL.startsWith('https://') && SUPABASE_KEY.length>20){
-      sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-      const {data,error}=await sb.from('app_data').select('data').eq('id',1).maybeSingle();
-      if(!error){
-        cloudReady=true;
-        if(data&&data.data&&data.data.cases){DB=data.data;localStorage.setItem(DB_KEY,JSON.stringify(DB));console.log('已从云端加载数据')}
-        else{syncToCloud()}
-      }
-    }
+    const {data,error}=await sb.from('app_data').select('data').eq('id',1).maybeSingle();
+    if(!error){
+      cloudReady=true;
+      if(data&&data.data&&data.data.cases){DB=data.data;localStorage.setItem(DB_KEY,JSON.stringify(DB));console.log('已从云端加载数据')}
+      else{syncToCloud()}
+    }else{console.warn('云端读取失败：',error.message)}
   }catch(e){console.warn('云端连接失败，本次使用本地数据',e)}
-  const u=sessionStorage.getItem('lms_user');
-  if(u){document.getElementById('whoName').textContent='👤 '+u;go('dash')}
+}
+(async function init(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(session){sessionStorage.setItem('lms_user',session.user.email);document.getElementById('whoName').textContent='👤 '+session.user.email;await cloudLoad();go('dash')}
   document.getElementById('lg-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
   document.getElementById('lg-user').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
 })();
