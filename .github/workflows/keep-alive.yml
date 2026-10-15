@@ -1,0 +1,30 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    - cron: '0 2 */3 * *'    # 每3天 UTC 02:00（北京时间上午10点）运行
+  workflow_dispatch:          # 允许在 Actions 页面手动触发测试
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping website & database
+        env:
+          SUPA_URL: https://hxfncjuxipxfmrurktie.supabase.co
+          SUPA_KEY: sb_publishable_R1pyXsVJFskOax0s1-ka6Q_4sGctz_E
+          SUPA_EMAIL: ${{ secrets.SUPA_EMAIL }}
+          SUPA_PASSWORD: ${{ secrets.SUPA_PASSWORD }}
+        run: |
+          # 1. 访问网页
+          curl -s https://averi-0205.github.io/Legal-Management-System/ > /dev/null
+          # 2. 用专用账号登录 Supabase 拿令牌
+          TOKEN=$(curl -s -X POST "$SUPA_URL/auth/v1/token?grant_type=password" \
+            -H "apikey: $SUPA_KEY" -H "Content-Type: application/json" \
+            -d "{\"email\":\"$SUPA_EMAIL\",\"password\":\"$SUPA_PASSWORD\"}" \
+            | python3 -c "import sys,json;print(json.load(sys.stdin).get('access_token',''))")
+          if [ -z "$TOKEN" ]; then echo "保活账号登录失败，请检查 Secrets"; exit 1; fi
+          # 3. 查询一次数据库（重置休眠计时）
+          curl -s "$SUPA_URL/rest/v1/app_data?select=id&limit=1" \
+            -H "apikey: $SUPA_KEY" -H "Authorization: Bearer $TOKEN" > /dev/null
+          echo "保活完成：$(date -u)"
