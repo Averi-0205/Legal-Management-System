@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>法务管理系统</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{
   --primary:#2563eb; --primary-d:#1e40af; --bg:#f7f8fa; --card:#ffffff;
@@ -188,13 +189,13 @@ table.tbl tbody tr:hover{background:#f8faff}
       <div class="dash-card" onclick="go('biz')">
         <div class="dash-icon di-indigo">🏢</div>
         <h3>商办法律分析</h3>
-        <p>客户基本情况、现存问题、问题分析<br>诉前准备初步判断</p>
+        <p>客户基本情况、现存问题、问题分析<br>诉前准备初步判断、相关材料</p>
         <span class="cnt" id="cnt-biz"></span>
       </div>
       <div class="dash-card" onclick="go('fee')">
         <div class="dash-icon di-teal">💰</div>
         <h3>法律费用管理</h3>
-        <p>常法/坐班服务、常务/专项服务费<br>案件相关费用</p>
+        <p>常法/坐班服务、常务/专项服务费<br>案件相关费用，支持批量导入</p>
         <span class="cnt" id="cnt-fee"></span>
       </div>
       <div class="dash-card" onclick="go('fuping')">
@@ -206,7 +207,7 @@ table.tbl tbody tr:hover{background:#f8faff}
       <div class="dash-card" onclick="go('seal')">
         <div class="dash-icon" style="background:#fef3c7">🔖</div>
         <h3>印章、档案管理</h3>
-        <p>印章台账：性质 · 持有人 · 使用频率<br>电子档案 / 档案室</p>
+        <p>印章台账：性质 · 持有人 · 使用频率<br>支持批量导入 Excel</p>
         <span class="cnt" id="cnt-seal2"></span>
       </div>
       <div class="dash-card dev">
@@ -270,6 +271,8 @@ table.tbl tbody tr:hover{background:#f8faff}
       <div class="panel-bd" id="bizAnalysis"></div></div>
     <div class="panel"><div class="panel-hd"><h3>④ 初步判断是否需做诉前准备</h3></div>
       <div class="panel-bd" id="bizPrep"></div></div>
+    <div class="panel"><div class="panel-hd"><h3>⑤ 相关材料</h3></div>
+      <div class="panel-bd" id="bizMaterials"></div></div>
   </div>
 </div>
 
@@ -286,7 +289,11 @@ table.tbl tbody tr:hover{background:#f8faff}
     <div class="fee-grid" id="feeCards"></div>
   </div>
   <div class="page hidden" id="fee-module">
-    <div class="page-head"><h2 id="feeModuleTitle"></h2></div>
+    <div class="page-head"><h2 id="feeModuleTitle"></h2><span class="spacer"></span>
+      <button class="btn btn-sm" onclick="document.getElementById('feeImportFile').click()">📥 批量导入Excel</button>
+      <button class="btn btn-sm" onclick="downloadFeeTemplate()">⬇ 下载导入模板</button>
+      <input type="file" id="feeImportFile" accept=".xlsx,.xls" class="hidden" onchange="importFees(event)">
+    </div>
     <div class="panel"><div class="panel-bd" style="padding:0" id="feeTableWrap"></div></div>
   </div>
 </div>
@@ -330,7 +337,7 @@ table.tbl tbody tr:hover{background:#f8faff}
       <div class="fee-card" onclick="openSealModule('seal')">
         <div class="fi" style="background:#fef3c7">🔖</div>
         <h3>印章管理</h3>
-        <p>公司印章台账：印章性质、现持有人、交接时间、使用频率</p>
+        <p>公司印章台账：印章性质、现持有人、交接时间、使用频率（按使用频率由高到低排列，支持批量导入）</p>
         <div class="amt" style="font-size:16px" id="cnt-seal"></div>
       </div>
       <div class="fee-card" onclick="openSealModule('archive')">
@@ -344,6 +351,9 @@ table.tbl tbody tr:hover{background:#f8faff}
   <div class="page hidden" id="seal-module">
     <div class="page-head"><h2 id="sealModuleTitle"></h2>
       <span class="spacer"></span>
+      <button class="btn btn-sm hidden" id="sealImportBtn" onclick="document.getElementById('sealImportFile').click()">📥 批量导入Excel</button>
+      <button class="btn btn-sm hidden" id="sealTplBtn" onclick="downloadSealTemplate()">⬇ 下载导入模板</button>
+      <input type="file" id="sealImportFile" accept=".xlsx,.xls" class="hidden" onchange="importSeals(event)">
       <button class="btn btn-sm btn-primary" id="sealAddBtn" onclick="openSealRecModal()">＋ 新增记录</button>
     </div>
     <div class="tabs" id="archiveTabs" style="display:none"></div>
@@ -376,7 +386,7 @@ function seed(){
   const mk=(name)=>({id:uid(),name,caseNo:'',court:'',role:'原告',oppo:'',amount:0,status:'诉前',filingDate:'',summary:'',
     process:[],costs:[],materials:[],arrangements:[]});
   const mkc=(name)=>({id:uid(),name,contractStart:'',contractEnd:'',rent:0,payMethod:'',deposit:0,performance:'',
-    problems:[],analysis:'',prep:{need:false,note:''}});
+    materials:[],problems:[],analysis:'',prep:{need:false,note:''}});
   return {
     cases:[mk('易合坊'),mk('腾跃'),mk('游小方'),mk('潘佳亮')],
     clients:[mkc('篮羽球场'),mkc('茜卡'),mkc('世瀛')],
@@ -395,6 +405,7 @@ function ensureShape(){
   if(!DB.fuping)DB.fuping={'2769':[],'2779':[]};
   ['2769','2779'].forEach(p=>{if(!Array.isArray(DB.fuping[p]))DB.fuping[p]=[]});
   if(!DB.seals)DB.seals=[];
+  if(Array.isArray(DB.clients))DB.clients.forEach(c=>{if(!Array.isArray(c.materials))c.materials=[]});
   if(!DB.archives)DB.archives={electronic:{note:'',records:[]},room:{note:'',records:[]}};
   ['electronic','room'].forEach(k=>{if(!DB.archives[k])DB.archives[k]={note:'',records:[]};if(!Array.isArray(DB.archives[k].records))DB.archives[k].records=[]});
 }
@@ -760,6 +771,8 @@ function renderBizDetail(){
      <button class="btn btn-sm" onclick="togglePrep()">切换判断</button>
      <button class="btn btn-sm" onclick="openPrepModal()">✎ 编辑说明</button></div>
    <div class="txt">${esc(c.prep.note)||'—'}</div>`;
+  document.getElementById('bizMaterials').innerHTML=bizMaterial(c);
+  bindBizDropzone(c);
 }
 function remainLease(c){
   if(!c.contractEnd)return '—';
@@ -780,7 +793,7 @@ function openClientModal(id){
     const name=val('cl-name');if(!name)return setErr('cl-name','请填写客户名称');
     const obj={name,contractStart:val('cl-start'),contractEnd:val('cl-end'),rent:parseFloat(val('cl-rent'))||0,deposit:parseFloat(val('cl-deposit'))||0,payMethod:val('cl-pay'),performance:val('cl-perf')};
     if(id)Object.assign(DB.clients.find(x=>x.id===id),obj);
-    else DB.clients.push({id:uid(),...obj,problems:[],analysis:'',prep:{need:false,note:''}});
+    else DB.clients.push({id:uid(),...obj,materials:[],problems:[],analysis:'',prep:{need:false,note:''}});
     save();
     if(curClient&&curClient.id===id)renderBizDetail();else renderBizList();
     toast('已保存');return true;
@@ -866,7 +879,7 @@ function renderFeeTable(){
       <td><button class="btn btn-sm" onclick="openFeeModal('casefee','${x.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delFee('casefee','${x.id}')">删除</button></td></tr>`).join('');
     foot=`<tr style="background:#fafbfc;font-weight:600"><td colspan="2">合计金额</td><td class="num">${money(DB.fees.casefee.reduce((s,x)=>s+Number(x.amount||0),0))}</td><td colspan="3"></td></tr>`;
   }
-  w.innerHTML=`<table class="tbl"><thead>${head}</thead><tbody>${rows||'<tr><td colspan="7"><div class="empty">暂无记录，点击右上角「新增记录」创建</div></td></tr>'}</tbody><tfoot>${foot}</tfoot></table>`;
+  w.innerHTML=`<table class="tbl"><thead>${head}</thead><tbody>${rows||'<tr><td colspan="7"><div class="empty">暂无记录，点击右上角「新增记录」创建，或使用「批量导入Excel」</div></td></tr>'}</tbody><tfoot>${foot}</tfoot></table>`;
 }
 function openFeeModal(k,id){
   const arr=DB.fees[k]; const x=id?arr.find(a=>a.id===id):(k==='regular'?{date:today().slice(0,7),lawyer:'',mode:'常法',hours:'',client:'公司本部',content:''}:k==='service'?{date:today(),type:'常务',client:'',item:'',amount:'',note:''}:{date:today(),item:'',amount:'',note:'',caseId:'',linked:false});
@@ -1028,6 +1041,8 @@ function openSealModule(k){
   document.getElementById('seal-module').classList.remove('hidden');
   document.getElementById('seal-crumb2').textContent='/ '+(k==='seal'?'印章管理':'档案管理');
   document.getElementById('sealModuleTitle').textContent=k==='seal'?'印章管理':'档案管理';
+  document.getElementById('sealImportBtn').classList.toggle('hidden',k!=='seal');
+  document.getElementById('sealTplBtn').classList.toggle('hidden',k!=='seal');
   const addBtn=document.getElementById('sealAddBtn');
   addBtn.textContent=k==='seal'?'＋ 新增印章':'＋ 新增记录';
   const isArch=k==='archive';
@@ -1044,10 +1059,12 @@ function renderArchiveTabs(){
 function renderSealTable(){
   const w=document.getElementById('sealTableWrap');
   if(sealMod==='seal'){
-    let html='<table class="tbl"><colgroup><col style="width:20%"><col style="width:15%"><col style="width:17%"><col style="width:13%"><col style="width:13%"><col style="width:12%"></colgroup>';
-    html+='<thead><tr><th>公司</th><th>印章性质</th><th>印章现持有人</th><th>交接时间</th><th>使用频率</th><th>操作</th></tr></thead><tbody>';
-    if(!DB.seals.length)html+='<tr><td colspan="6"><div class="empty">暂无印章记录，点右上角「新增印章」创建</div></td></tr>';
-    DB.seals.forEach(s=>{html+=`<tr><td>${esc(s.company)}</td><td><span class="tag tag-blue">${esc(s.type)}</span></td><td>${esc(s.holder)}</td><td>${esc(s.handover)}</td><td><span class="tag ${s.freq==='高'?'tag-red':s.freq==='中'?'tag-orange':'tag-gray'}">${esc(s.freq)}</span></td><td><button class="btn btn-sm" onclick="openSealRecModal('${s.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delSealRec('${s.id}')">删除</button></td></tr>`});
+    const FREQ_ORDER={'高':0,'中':1,'低':2,'基本不使用':3};
+    const slist=[...DB.seals].sort((a,b)=>(FREQ_ORDER[a.freq]??4)-(FREQ_ORDER[b.freq]??4)||String(a.company).localeCompare(String(b.company),'zh'));
+    let html='<table class="tbl"><colgroup><col style="width:6%"><col style="width:19%"><col style="width:15%"><col style="width:17%"><col style="width:13%"><col style="width:13%"><col style="width:12%"></colgroup>';
+    html+='<thead><tr><th>序号</th><th>公司</th><th>印章性质</th><th>印章现持有人</th><th>交接时间</th><th title="按使用频率由高到低排列">使用频率 ↓</th><th>操作</th></tr></thead><tbody>';
+    if(!slist.length)html+='<tr><td colspan="7"><div class="empty">暂无印章记录，点右上角「新增印章」创建，或使用「批量导入Excel」</div></td></tr>';
+    slist.forEach((s,i)=>{html+=`<tr><td class="sub">${i+1}</td><td>${esc(s.company)}</td><td><span class="tag tag-blue">${esc(s.type)}</span></td><td>${esc(s.holder)}</td><td>${esc(s.handover)}</td><td><span class="tag ${s.freq==='高'?'tag-red':s.freq==='中'?'tag-orange':'tag-gray'}">${esc(s.freq)}</span></td><td><button class="btn btn-sm" onclick="openSealRecModal('${s.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delSealRec('${s.id}')">删除</button></td></tr>`});
     w.innerHTML=html+'</tbody></table>';
   }else{
     const recs=DB.archives[archTab].records;
@@ -1064,10 +1081,10 @@ function openSealRecModal(rid){
     const s=rid?DB.seals.find(x=>x.id===rid):{company:'',type:'公章',holder:'安子玥',handover:today(),freq:'中'};
     openModal(rid?'编辑印章':'新增印章',`<div class="frm-row">
      <div class="field"><label>公司 *</label><input id="sl-company" value="${esc(s.company)}" placeholder="如：富平XX置业有限公司"></div>
-     <div class="field"><label>印章性质 *</label><select id="sl-type">${['公章','合同章','人事专用章','财务章','发票章'].map(t=>`<option ${s.type===t?'selected':''}>${t}</option>`).join('')}</select></div>
+     <div class="field"><label>印章性质 *</label><select id="sl-type">${SEAL_TYPES.map(t=>`<option ${s.type===t?'selected':''}>${t}</option>`).join('')}</select></div>
      <div class="field"><label>印章现持有人 *（默认安子玥，可修改）</label><input id="sl-holder" value="${esc(s.holder)}"></div>
      <div class="field"><label>交接时间</label><input id="sl-handover" type="date" value="${s.handover}"></div>
-     <div class="field full"><label>印章使用频率</label><select id="sl-freq">${['高','中','低','基本不使用'].map(f=>`<option ${s.freq===f?'selected':''}>${f}</option>`).join('')}</select></div></div>`,()=>{
+     <div class="field full"><label>印章使用频率</label><select id="sl-freq">${SEAL_FREQS.map(f=>`<option ${s.freq===f?'selected':''}>${f}</option>`).join('')}</select></div></div>`,()=>{
       const company=val('sl-company');if(!company)return setErr('sl-company','请填写公司');
       const obj={id:rid||uid(),company,type:val('sl-type'),holder:val('sl-holder')||'安子玥',handover:val('sl-handover'),freq:val('sl-freq')};
       if(rid)Object.assign(DB.seals.find(x=>x.id===rid),obj);else DB.seals.push(obj);
@@ -1126,6 +1143,172 @@ async function cloudLoad(){
   document.getElementById('lg-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
   document.getElementById('lg-user').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
 })();
+</script>
+
+<script>
+/* ==================== 商办法律分析 · 相关材料 ==================== */
+function bizMaterial(c){
+  let html=`<div class="upzone" id="bizUpzone"><div class="big">📤</div><b>点击或拖拽上传客户相关材料</b><div style="font-size:12px;margin-top:6px">支持压缩包（zip/rar/7z）、PDF、Word（doc/docx）、Excel（xls/xlsx）、HTML、EML 邮件、图片等格式，单文件 ≤ 3MB（内容随数据一并保存，可下载）</div></div>
+  <input type="file" id="bizFileInput" multiple class="hidden" accept=".zip,.rar,.7z,.pdf,.doc,.docx,.xls,.xlsx,.html,.htm,.eml,.txt,.png,.jpg,.jpeg">
+  <div style="margin-top:18px">`;
+  if(!c.materials.length)html+='<div class="empty">暂无相关材料</div>';
+  else{
+    html+='<table class="tbl"><colgroup><col style="width:6%"><col style="width:34%"><col style="width:12%"><col style="width:12%"><col style="width:16%"><col style="width:20%"></colgroup><thead><tr><th></th><th>文件名</th><th>格式</th><th class="num">大小</th><th>上传时间</th><th>操作</th></tr></thead><tbody>';
+    c.materials.forEach(m=>{html+=`<tr><td class="center">${fmtIcon(m.name)}</td><td>${esc(m.name)}</td><td><span class="tag tag-gray">.${esc(m.ext)}</span></td><td class="num">${m.size}</td><td>${esc(m.time)}</td><td>${m.data?`<button class="btn btn-sm" onclick="downloadBizMat('${m.id}')">⬇ 下载</button> `:'<span class="sub" style="font-size:12px">（仅登记）</span> '}<button class="btn btn-sm btn-danger" onclick="delBizMat('${m.id}')">删除</button></td></tr>`});
+    html+='</tbody></table>';
+  }
+  return html+'</div>';
+}
+function bindBizDropzone(c){
+  const z=document.getElementById('bizUpzone'),f=document.getElementById('bizFileInput');
+  if(!z)return;
+  z.onclick=()=>f.click();
+  z.ondragover=e=>{e.preventDefault();z.classList.add('drag')};
+  z.ondragleave=()=>z.classList.remove('drag');
+  z.ondrop=e=>{e.preventDefault();z.classList.remove('drag');handleFiles(e.dataTransfer.files)};
+  f.onchange=()=>handleFiles(f.files);
+  function handleFiles(files){
+    [...files].forEach(file=>{
+      const ext=file.name.split('.').pop().toLowerCase();
+      if(!FMT_OK.includes(ext)){toast('不支持的格式：'+file.name);return}
+      const rec={id:uid(),name:file.name,ext,time:new Date().toLocaleString('zh-CN'),size:(file.size/1024).toFixed(1)+' KB',data:null};
+      const done=()=>{c.materials.push(rec);save();renderBizDetail();toast('已上传：'+file.name)};
+      if(file.size<=3*1024*1024){
+        const r=new FileReader();r.onload=()=>{rec.data=r.result;done()};r.readAsDataURL(file);
+      }else{rec.size=(file.size/1048576).toFixed(2)+' MB';done();}
+    });
+    f.value='';
+  }
+}
+function downloadBizMat(id){
+  const m=curClient.materials.find(x=>x.id===id); if(!m||!m.data)return;
+  const a=document.createElement('a');a.href=m.data;a.download=m.name;a.click();
+}
+function delBizMat(id){if(!confirm('确定删除该材料？'))return;curClient.materials=curClient.materials.filter(m=>m.id!==id);save();renderBizDetail();toast('已删除')}
+
+/* ==================== Excel 批量导入（印章 / 费用） ==================== */
+const SEAL_TYPES=['公章','合同章','人事专用章','财务章','发票章','法人章','项目专用章','其他'];
+const SEAL_FREQS=['高','中','低','基本不使用'];
+function xlsxReady(){return typeof XLSX!=='undefined'}
+function readExcel(file,cb){
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      cb(XLSX.utils.sheet_to_json(ws,{header:1,defval:''}));
+    }catch(err){toast('Excel 解析失败：'+err.message)}
+  };
+  r.readAsArrayBuffer(file);
+}
+function norm(s){return String(s==null?'':s).replace(/[（(].*?[)）]/g,'').replace(/[：:]/g,'').replace(/\s/g,'')}
+function colIdx(header,aliases){
+  const h=header.map(norm);
+  for(const a of aliases){const i=h.indexOf(norm(a));if(i>=0)return i}
+  return -1;
+}
+function parseExcelDate(v){
+  if(v==null||v==='')return '';
+  if(v instanceof Date)return v.toISOString().slice(0,10);
+  if(typeof v==='number'&&v>20000&&v<80000){const d=XLSX.SSF.parse_date_code(v);return d?`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`:''}
+  const s=String(v).trim();const m=s.match(/^(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})/);if(m)return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  return s;
+}
+function parseExcelMonth(v){
+  if(v instanceof Date)return v.toISOString().slice(0,7);
+  const s=String(v).trim();const m=s.match(/(\d{4})[-/.年](\d{1,2})/);return m?`${m[1]}-${m[2].padStart(2,'0')}`:s;
+}
+function downloadXlsx(name,headers,rows){
+  const ws=XLSX.utils.aoa_to_sheet([headers].concat(rows));
+  ws['!cols']=headers.map(h=>({wch:Math.max(14,String(h).length*2+8)}));
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
+  XLSX.writeFile(wb,name);
+}
+/* ---- 印章批量导入 ---- */
+function importSeals(e){
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  if(!xlsxReady()){toast('Excel 组件未加载，请检查网络后刷新重试');return}
+  readExcel(f,rows=>{
+    if(rows.length<2){toast('表格为空或缺少表头');return}
+    const h=rows[0];
+    const iC=colIdx(h,['公司','公司名称']),iT=colIdx(h,['印章性质']),iH=colIdx(h,['印章现持有人','现持有人','持有人']),iD=colIdx(h,['交接时间']),iF=colIdx(h,['使用频率']);
+    if(iC<0){toast('未找到「公司」列，请先下载导入模板对照填写');return}
+    let ok=0,skip=0;
+    rows.slice(1).forEach(r=>{
+      const company=String(r[iC]||'').trim();
+      if(!company){skip++;return}
+      let type=String(iT>=0?r[iT]:'').trim();if(!SEAL_TYPES.includes(type))type='公章';
+      let freq=String(iF>=0?r[iF]:'').trim();if(!SEAL_FREQS.includes(freq))freq='中';
+      DB.seals.push({id:uid(),company,type,holder:String(iH>=0?r[iH]:'').trim()||'安子玥',handover:parseExcelDate(iD>=0?r[iD]:''),freq});
+      ok++;
+    });
+    save();renderSealTable();
+    toast(`导入完成：新增 ${ok} 枚印章，跳过 ${skip} 行`);
+  });
+}
+function downloadSealTemplate(){
+  if(!xlsxReady()){toast('Excel 组件未加载，请检查网络后刷新重试');return}
+  downloadXlsx('印章批量导入模板.xlsx',['公司','印章性质','印章现持有人','交接时间','使用频率'],[
+    ['示例置业有限公司','公章','安子玥','2026-01-15','高'],
+    ['示例置业有限公司','法人章','安子玥','2026-01-15','中'],
+    ['示例置业有限公司','项目专用章','张三','2026-03-01','低'],
+    ['示例科技有限公司','合同章','安子玥','2025-12-20','基本不使用']
+  ]);
+}
+/* ---- 费用批量导入 ---- */
+function importFees(e){
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  if(!xlsxReady()){toast('Excel 组件未加载，请检查网络后刷新重试');return}
+  const k=feeMod;if(!k){toast('请先进入具体费用模块再导入');return}
+  readExcel(f,rows=>{
+    if(rows.length<2){toast('表格为空或缺少表头');return}
+    const h=rows[0];let ok=0,skip=0;
+    if(k==='regular'){
+      const iM=colIdx(h,['服务月份','月份']),iL=colIdx(h,['服务人员']),iW=colIdx(h,['服务方式']),iH2=colIdx(h,['时长','时长（小时）']),iC2=colIdx(h,['服务内容']);
+      rows.slice(1).forEach(r=>{
+        const lawyer=String(iL>=0?r[iL]:'').trim(),content=String(iC2>=0?r[iC2]:'').trim(),hours=parseFloat(r[iH2>=0?iH2:-1]);
+        if(!lawyer||!content||isNaN(hours)){skip++;return}
+        let mode=String(iW>=0?r[iW]:'').trim();if(!['常法','坐班'].includes(mode))mode='常法';
+        const mraw=iM>=0?r[iM]:'';
+        DB.fees.regular.push({id:uid(),date:mraw?parseExcelMonth(mraw):today().slice(0,7),lawyer,mode,hours,content});ok++;
+      });
+    }else if(k==='service'){
+      const iD=colIdx(h,['日期']),iT=colIdx(h,['费用类型','类型']),iCl=colIdx(h,['客户/对象','客户','服务对象']),iI=colIdx(h,['费用项目','项目']),iA=colIdx(h,['金额','金额（元）']),iN=colIdx(h,['备注']);
+      rows.slice(1).forEach(r=>{
+        const item=String(iI>=0?r[iI]:'').trim(),amt=parseFloat(r[iA>=0?iA:-1]);
+        if(!item||isNaN(amt)){skip++;return}
+        let type=String(iT>=0?r[iT]:'').trim();if(!['常务','专项'].includes(type))type='常务';
+        DB.fees.service.push({id:uid(),date:parseExcelDate(iD>=0?r[iD]:'')||today(),type,client:String(iCl>=0?r[iCl]:'').trim(),item,amount:amt,note:String(iN>=0?r[iN]:'').trim()});ok++;
+      });
+    }else{
+      const iD=colIdx(h,['日期']),iI=colIdx(h,['费用项目','项目']),iA=colIdx(h,['金额','金额（元）']),iN=colIdx(h,['备注']),iCase=colIdx(h,['关联案件','关联立项信息','案件']);
+      rows.slice(1).forEach(r=>{
+        const item=String(iI>=0?r[iI]:'').trim(),amt=parseFloat(r[iA>=0?iA:-1]);
+        if(!item||isNaN(amt)){skip++;return}
+        const cname=String(iCase>=0?r[iCase]:'').trim();
+        const cs=cname?DB.cases.find(c=>c.name===cname):null;
+        DB.fees.casefee.push({id:uid(),date:parseExcelDate(iD>=0?r[iD]:'')||today(),item,amount:amt,note:String(iN>=0?r[iN]:'').trim(),caseId:cs?cs.id:'',linked:!!cs});ok++;
+      });
+    }
+    save();renderFeeTable();
+    toast(`导入完成：新增 ${ok} 条，跳过 ${skip} 行`);
+  });
+}
+function downloadFeeTemplate(){
+  if(!xlsxReady()){toast('Excel 组件未加载，请检查网络后刷新重试');return}
+  if(feeMod==='regular')downloadXlsx('常法坐班服务导入模板.xlsx',['服务月份','服务人员','服务方式','时长（小时）','服务内容'],[
+    ['2026-09','王律师','常法','8','合同审核3份、法律咨询2次'],
+    ['2026-09','李律师','坐班','16','驻场坐班，处理日常法律事务']
+  ]);
+  else if(feeMod==='service')downloadXlsx('服务费用导入模板.xlsx',['日期','费用类型','客户/对象','费用项目','金额（元）','备注'],[
+    ['2026-09-30','专项','篮羽球场','专项法律服务费','30000','2026年三季度'],
+    ['2026-09-30','常务','公司本部','常年法律顾问费','50000','年度费用']
+  ]);
+  else downloadXlsx('案件费用导入模板.xlsx',['日期','费用项目','金额（元）','备注','关联案件'],[
+    ['2026-09-20','诉讼费','5250','一审案件受理费','易合坊'],
+    ['2026-09-25','保全费','3020','财产保全申请费','腾跃']
+  ]);
+}
 </script>
 </body>
 </html>
