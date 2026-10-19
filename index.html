@@ -1235,6 +1235,7 @@ function renderTodos(){
   if(!Array.isArray(DB.todos))DB.todos=[];
   ['todoModalBoard','todoPageBoard'].forEach(id=>{
     const board=document.getElementById(id);if(!board)return;
+    const bid=board.id;
     board.innerHTML=TODO_COLS.map(col=>{
       const items=DB.todos.filter(t=>t.col===col.key).sort((a,b)=>(a.done-b.done)||(a.createdAt-b.createdAt));
       const openCnt=items.filter(t=>!t.done).length;
@@ -1249,12 +1250,12 @@ function renderTodos(){
       return `<div class="todo-col">
         <div class="todo-col-hd"><span class="dot" style="background:${col.dot}"></span><b>${col.name}</b><span class="n">${openCnt}</span><span class="spacer"></span>
         <button class="todo-clear" onclick="clearDoneTodo('${col.key}')" title="清除已完成">清空</button>
-        <button class="todo-add" onclick="showTodoForm('${col.key}')" title="添加待办">+</button></div>
-        <div class="todo-form" id="todoForm-${col.key}">
-          <input type="text" placeholder="要做的事…" id="todoTxt-${col.key}" onkeydown="if(event.key==='Enter')submitTodo('${col.key}')">
-          <div class="todo-form-row"><input type="date" id="todoDdl-${col.key}" ${col.needDdl?'':'value="'+today()+'"'} min="${today()}">
-          <button class="btn btn-sm btn-primary" onclick="submitTodo('${col.key}')">添加</button>
-          <button class="btn btn-sm" onclick="hideTodoForm('${col.key}')">取消</button></div>
+        <button class="todo-add" onclick="showTodoForm('${bid}','${col.key}')" title="添加待办">+</button></div>
+        <div class="todo-form" id="${bid}-form-${col.key}">
+          <input type="text" placeholder="要做的事…" id="${bid}-txt-${col.key}" onkeydown="if(event.key==='Enter')submitTodo('${bid}','${col.key}')">
+          <div class="todo-form-row"><input type="date" id="${bid}-ddl-${col.key}" ${col.needDdl?'':'value="'+today()+'"'} min="${today()}">
+          <button class="btn btn-sm btn-primary" onclick="submitTodo('${bid}','${col.key}')">添加</button>
+          <button class="btn btn-sm" onclick="hideTodoForm('${bid}','${col.key}')">取消</button></div>
         </div>
         <div class="todo-list">${rows||'<div class="todo-empty">暂无待办，点右上角 + 添加</div>'}</div>
       </div>`;
@@ -1266,11 +1267,11 @@ function renderTodos(){
   renderTodoFab();
   if(typeof renderDash==='function'&&!document.getElementById('view-dash').classList.contains('hidden'))renderDash();
 }
-function showTodoForm(col){document.querySelectorAll('.todo-form.open').forEach(f=>f.classList.remove('open'));document.getElementById('todoForm-'+col).classList.add('open');document.getElementById('todoTxt-'+col).focus()}
-function hideTodoForm(col){document.getElementById('todoForm-'+col).classList.remove('open')}
-function submitTodo(col){
-  const txt=document.getElementById('todoTxt-'+col).value.trim();
-  const ddl=document.getElementById('todoDdl-'+col).value;
+function showTodoForm(bid,col){document.querySelectorAll('.todo-form.open').forEach(f=>f.classList.remove('open'));const f=document.getElementById(bid+'-form-'+col);f.classList.add('open');document.getElementById(bid+'-txt-'+col).focus()}
+function hideTodoForm(bid,col){document.getElementById(bid+'-form-'+col).classList.remove('open')}
+function submitTodo(bid,col){
+  const txt=document.getElementById(bid+'-txt-'+col).value.trim();
+  const ddl=document.getElementById(bid+'-ddl-'+col).value;
   const meta=TODO_COLS.find(c=>c.key===col);
   if(!txt){toast('请输入待办内容');return}
   if(meta.needDdl&&!ddl){toast('请为「'+meta.name+'」选择 DDL 时间');return}
