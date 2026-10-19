@@ -52,11 +52,11 @@ body{font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-ser
 .topbar .crumb{font-size:15px;font-weight:600}
 .topbar .spacer{flex:1}
 .topbar .who{color:var(--sub);font-size:13px}
-.dash-wrap{height:calc(100vh - 60px);padding:24px;display:flex;flex-direction:column;gap:24px}
+.dash-wrap{min-height:calc(100vh - 60px);padding:24px;display:flex;flex-direction:column;gap:24px}
 .dash-head{display:flex;align-items:baseline;justify-content:space-between}
 .dash-head h2{font-size:20px}
-.dash-grid{flex:1;display:grid;grid-auto-flow:column;grid-template-rows:1fr;grid-auto-columns:calc((100% - 72px)/4);gap:24px;overflow-x:auto;padding-bottom:8px}
-.dash-card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:.2s;padding:32px;text-align:center}
+.dash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;padding-bottom:8px}
+.dash-card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:.2s;padding:32px;text-align:center;min-height:215px}
 .dash-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:#c7d7fe}
 .dash-card.dev{cursor:default;background:repeating-linear-gradient(45deg,#fff,#fff 12px,#fafafa 12px,#fafafa 24px)}
 .dash-card.dev:hover{transform:none;box-shadow:var(--shadow)}
@@ -65,7 +65,8 @@ body{font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-ser
 .dash-card h3{font-size:18px}
 .dash-card p{color:var(--sub);font-size:13px;line-height:1.7}
 .dash-card .cnt{font-size:12px;color:var(--sub)}
-@media(max-width:1100px){.dash-grid{grid-auto-columns:calc((100% - 24px)/2)}}
+@media(max-width:1100px){.dash-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.dash-grid{grid-template-columns:1fr}}
 /* ---------- 通用页面 ---------- */
 .page{padding:24px 28px;max-width:1500px;margin:0 auto}
 .page-head{display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap}
@@ -145,6 +146,48 @@ table.tbl tbody tr:hover{background:#f8faff}
 .mod-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:var(--shadow)}
 .mod-card h4{font-size:14px;margin:0;display:flex;align-items:center;gap:8px}
 .notice-bar{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:10px;padding:10px 16px;font-size:13px;margin-bottom:16px;display:flex;gap:10px;align-items:center}
+
+/* ---------- 待办事项 ---------- */
+.todo-fab{position:fixed;right:22px;bottom:26px;width:56px;height:56px;border-radius:50%;background:var(--primary);color:#fff;font-size:24px;border:none;cursor:pointer;box-shadow:0 6px 18px rgba(37,99,235,.4);z-index:150;display:flex;align-items:center;justify-content:center}
+.todo-fab:hover{background:var(--primary-d)}
+.todo-fab .badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:11px;min-width:20px;height:20px;border-radius:999px;display:none;align-items:center;justify-content:center;padding:0 5px}
+.todo-mask{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:200;display:flex;align-items:center;justify-content:center}
+.todo-modal{width:75vw;height:75vh;max-width:1240px;max-height:780px;min-width:320px;min-height:420px;background:#fff;border-radius:16px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;overflow:hidden}
+.todo-hd{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex:none}
+.todo-hd h3{font-size:16px}
+.todo-hd .spacer{flex:1}
+.todo-x{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:16px;color:var(--sub)}
+.todo-x:hover{border-color:var(--red);color:var(--red)}
+.todo-board{flex:1;display:flex;gap:14px;padding:14px;overflow:auto;background:#f7f8fa}
+.todo-col{flex:1;min-width:230px;display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.todo-col-hd{padding:10px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);flex:none}
+.todo-col-hd .dot{width:8px;height:8px;border-radius:50%}
+.todo-col-hd b{font-size:13.5px}
+.todo-col-hd .n{font-size:12px;color:var(--sub);background:var(--soft);border-radius:999px;padding:1px 8px}
+.todo-col-hd .spacer{flex:1}
+.todo-add{width:26px;height:26px;border-radius:6px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--primary);font-size:16px;line-height:1}
+.todo-add:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+.todo-clear{border:none;background:none;color:var(--sub);cursor:pointer;font-size:12px}
+.todo-clear:hover{color:var(--red)}
+.todo-form{display:none;padding:10px;border-bottom:1px dashed var(--line);gap:6px;flex-direction:column}
+.todo-form.open{display:flex}
+.todo-form input[type=text]{padding:7px 9px;border:1px solid var(--line);border-radius:7px;font-size:13px;font-family:inherit}
+.todo-form-row{display:flex;gap:6px;align-items:center}
+.todo-form input[type=date]{flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:7px;font-size:12.5px;font-family:inherit}
+.todo-list{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+.todo-item{display:flex;align-items:flex-start;gap:8px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 10px}
+.todo-check{width:18px;height:18px;border-radius:50%;border:2px solid #cbd5e1;background:#fff;cursor:pointer;flex:none;margin-top:1px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
+.todo-item.done .todo-check{background:var(--green);border-color:var(--green)}
+.todo-body{flex:1;min-width:0}
+.todo-title{font-size:13.5px;word-break:break-all}
+.todo-item.done .todo-title{text-decoration:line-through;color:var(--sub)}
+.todo-ddl{display:inline-flex;align-items:center;gap:4px;margin-top:4px;font-size:11.5px;padding:1px 7px;border-radius:999px}
+.ddl-red{background:#fef2f2;color:#b91c1c}
+.ddl-orange{background:#fff7ed;color:#c2410c}
+.ddl-gray{background:var(--soft);color:var(--sub)}
+.todo-del{border:none;background:none;color:#cbd5e1;cursor:pointer;font-size:14px;flex:none}
+.todo-del:hover{color:var(--red)}
+.todo-empty{padding:18px;text-align:center;color:#cbd5e1;font-size:12.5px}
 </style>
 </head>
 <body>
@@ -180,6 +223,13 @@ table.tbl tbody tr:hover{background:#f8faff}
       <div><h2>子系统工作台</h2><div class="sub" style="font-size:13px;margin-top:4px">请选择要进入的业务子系统</div></div>
     </div>
     <div class="dash-grid">
+      <div class="dash-card" onclick="go('todo')">
+        <div class="dash-icon" style="background:#fff1f2">📋</div>
+        <h3>待办事项</h3>
+        <p>今日待办、紧急事项、一般待办<br>支持 DDL 截止时间提醒</p>
+        <span class="cnt" id="cnt-todo"></span>
+      </div>
+
       <div class="dash-card" onclick="go('lit')">
         <div class="dash-icon di-blue">📁</div>
         <h3>诉讼管理</h3>
@@ -408,6 +458,8 @@ function ensureShape(){
   if(Array.isArray(DB.clients))DB.clients.forEach(c=>{if(!Array.isArray(c.materials))c.materials=[]});
   if(!DB.archives)DB.archives={electronic:{note:'',records:[]},room:{note:'',records:[]}};
   ['electronic','room'].forEach(k=>{if(!DB.archives[k])DB.archives[k]={note:'',records:[]};if(!Array.isArray(DB.archives[k].records))DB.archives[k].records=[]});
+  if(!Array.isArray(DB.todos))DB.todos=[];
+  if(typeof DB.todoMin!=='boolean')DB.todoMin=false;
 }
 function save(){
   localStorage.setItem(DB_KEY,JSON.stringify(DB));
@@ -425,7 +477,7 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 function caseName(id){const c=DB.cases.find(x=>x.id===id);return c?c.name:'—'}
 
 /* ==================== 视图导航 ==================== */
-const VIEWS=['view-login','view-dash','view-lit','view-biz','view-fee','view-fuping','view-seal'];
+const VIEWS=['view-login','view-dash','view-lit','view-biz','view-fee','view-fuping','view-seal','view-todo'];
 /* 返回上一级：详情页→列表页→工作台 */
 function backPrev(){
   if(!document.getElementById('view-lit').classList.contains('hidden')){
@@ -455,6 +507,7 @@ function go(v){
   if(v==='fee'){showFeeHome();}
   if(v==='fuping'){showFpHome();}
   if(v==='seal'){showSealHome();}
+  if(v==='todo'){renderTodos();}
 }
 async function doLogin(){
   const email=val('lg-user'),pw=document.getElementById('lg-pass').value;
@@ -488,6 +541,8 @@ function renderDash(){
   const fpRecs=Object.values(DB.fuping).reduce((s,a)=>s+a.reduce((x,m)=>x+m.records.length,0),0);
   document.getElementById('cnt-fuping').textContent='功能模块 '+fpMods+' 个 · 记录 '+fpRecs+' 条';
   document.getElementById('cnt-seal2').textContent='在管印章 '+DB.seals.length+' 枚 · 档案记录 '+(DB.archives.electronic.records.length+DB.archives.room.records.length)+' 条';
+  const todoOpen=(DB.todos||[]).filter(t=>!t.done).length;
+  document.getElementById('cnt-todo').textContent=todoOpen?('待办 '+todoOpen+' 项'):'全部完成 ✓';
 }
 
 /* ==================== 通用弹窗 ==================== */
@@ -1143,6 +1198,102 @@ async function cloudLoad(){
   document.getElementById('lg-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
   document.getElementById('lg-user').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
 })();
+/* ==================== 待办事项 ==================== */
+const TODO_COLS=[
+  {key:'today', name:'今日待办', dot:'#2563eb', needDdl:false},
+  {key:'urgent', name:'紧急事项', dot:'#dc2626', needDdl:true},
+  {key:'normal', name:'一般待办', dot:'#d97706', needDdl:true}
+];
+function openTodoModal(){
+  DB.todoMin=false;save();renderTodos();
+  document.getElementById('todoMask').classList.remove('hidden');
+  document.getElementById('todoFab').classList.add('hidden');
+}
+function closeTodoModal(){
+  DB.todoMin=true;save();
+  document.getElementById('todoMask').classList.add('hidden');
+  document.getElementById('todoFab').classList.remove('hidden');
+  renderTodoFab();
+  toast('已最小化，点右下角 📋 重新打开');
+}
+function renderTodoFab(){
+  if(!DB||!Array.isArray(DB.todos))return;
+  const open=DB.todos.filter(t=>!t.done).length;
+  const b=document.getElementById('todoBadge');
+  b.textContent=open>99?'99+':open;b.style.display=open?'flex':'none';
+}
+function ddlText(t){
+  if(!t.ddl)return null;
+  const days=Math.ceil((new Date(t.ddl+'T23:59:59')-new Date())/86400000);
+  const label=t.ddl===today()?'今天':t.ddl.slice(5).replace('-','/');
+  if(days<0)return{txt:'已逾期 '+(-days)+' 天',cls:'ddl-red'};
+  if(days===0)return{txt:'今天截止',cls:'ddl-red'};
+  if(days<=3)return{txt:days+' 天后 · '+label,cls:'ddl-orange'};
+  return{txt:label,cls:'ddl-gray'};
+}
+function renderTodos(){
+  if(!Array.isArray(DB.todos))DB.todos=[];
+  ['todoModalBoard','todoPageBoard'].forEach(id=>{
+    const board=document.getElementById(id);if(!board)return;
+    board.innerHTML=TODO_COLS.map(col=>{
+      const items=DB.todos.filter(t=>t.col===col.key).sort((a,b)=>(a.done-b.done)||(a.createdAt-b.createdAt));
+      const openCnt=items.filter(t=>!t.done).length;
+      const rows=items.map(t=>{
+        const d=ddlText(t);
+        return `<div class="todo-item ${t.done?'done':''}">
+          <div class="todo-check" onclick="toggleTodo('${t.id}')">${t.done?'✓':''}</div>
+          <div class="todo-body"><div class="todo-title">${esc(t.title)}</div>
+          ${d?`<span class="todo-ddl ${d.cls}">⏰ ${d.txt}</span>`:(col.key==='today'?'<span class="todo-ddl ddl-gray">📌 今天</span>':'')}</div>
+          <button class="todo-del" onclick="delTodo('${t.id}')" title="删除">×</button></div>`;
+      }).join('');
+      return `<div class="todo-col">
+        <div class="todo-col-hd"><span class="dot" style="background:${col.dot}"></span><b>${col.name}</b><span class="n">${openCnt}</span><span class="spacer"></span>
+        <button class="todo-clear" onclick="clearDoneTodo('${col.key}')" title="清除已完成">清空</button>
+        <button class="todo-add" onclick="showTodoForm('${col.key}')" title="添加待办">+</button></div>
+        <div class="todo-form" id="todoForm-${col.key}">
+          <input type="text" placeholder="要做的事…" id="todoTxt-${col.key}" onkeydown="if(event.key==='Enter')submitTodo('${col.key}')">
+          <div class="todo-form-row"><input type="date" id="todoDdl-${col.key}" ${col.needDdl?'':'value="'+today()+'"'} min="${today()}">
+          <button class="btn btn-sm btn-primary" onclick="submitTodo('${col.key}')">添加</button>
+          <button class="btn btn-sm" onclick="hideTodoForm('${col.key}')">取消</button></div>
+        </div>
+        <div class="todo-list">${rows||'<div class="todo-empty">暂无待办，点右上角 + 添加</div>'}</div>
+      </div>`;
+    }).join('');
+  });
+  const done=DB.todos.filter(t=>t.done).length;
+  const stat='共 '+DB.todos.length+' 项 · 待办 '+(DB.todos.length-done)+' · 已完成 '+done;
+  ['todoModalStat','todoPageStat'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=stat});
+  renderTodoFab();
+  if(typeof renderDash==='function'&&!document.getElementById('view-dash').classList.contains('hidden'))renderDash();
+}
+function showTodoForm(col){document.querySelectorAll('.todo-form.open').forEach(f=>f.classList.remove('open'));document.getElementById('todoForm-'+col).classList.add('open');document.getElementById('todoTxt-'+col).focus()}
+function hideTodoForm(col){document.getElementById('todoForm-'+col).classList.remove('open')}
+function submitTodo(col){
+  const txt=document.getElementById('todoTxt-'+col).value.trim();
+  const ddl=document.getElementById('todoDdl-'+col).value;
+  const meta=TODO_COLS.find(c=>c.key===col);
+  if(!txt){toast('请输入待办内容');return}
+  if(meta.needDdl&&!ddl){toast('请为「'+meta.name+'」选择 DDL 时间');return}
+  DB.todos.push({id:uid(),col:col,title:txt,ddl:ddl||'',done:false,createdAt:Date.now()});
+  save();renderTodos();toast('已添加');
+}
+function toggleTodo(id){const t=DB.todos.find(x=>x.id===id);if(!t)return;t.done=!t.done;save();renderTodos()}
+function delTodo(id){DB.todos=DB.todos.filter(x=>x.id!==id);save();renderTodos()}
+function clearDoneTodo(col){const n=DB.todos.filter(t=>t.col===col&&t.done).length;if(!n){toast('没有已完成事项');return}DB.todos=DB.todos.filter(t=>!(t.col===col&&t.done));save();renderTodos();toast('已清除 '+n+' 项')}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('todoMask').classList.contains('hidden'))closeTodoModal()});
+/* 登录进入工作台后自动弹出（本次会话仅一次；上次最小化过则只显示悬浮按钮） */
+(function(){
+  const dash=document.getElementById('view-dash');if(!dash)return;
+  new MutationObserver(()=>{
+    if(dash.classList.contains('hidden'))return;
+    renderTodoFab();
+    if(sessionStorage.getItem('todo_popup_shown'))return;
+    sessionStorage.setItem('todo_popup_shown','1');
+    if(DB&&DB.todoMin){document.getElementById('todoFab').classList.remove('hidden');renderTodoFab()}
+    else openTodoModal();
+  }).observe(dash,{attributes:true,attributeFilter:['class']});
+})();
+
 </script>
 
 <script>
@@ -1310,5 +1461,34 @@ function downloadFeeTemplate(){
   ]);
 }
 </script>
+
+<!-- ================= 待办事项：弹窗 / 悬浮按钮 / 子页面 ================= -->
+<div id="todoMask" class="todo-mask hidden">
+  <div class="todo-modal">
+    <div class="todo-hd">
+      <h3>📋 待办事项</h3>
+      <span class="sub" id="todoModalStat" style="font-size:12.5px"></span>
+      <span class="spacer"></span>
+      <button class="todo-x" onclick="closeTodoModal()" title="最小化">×</button>
+    </div>
+    <div class="todo-board" id="todoModalBoard"></div>
+  </div>
+</div>
+<button id="todoFab" class="todo-fab hidden" onclick="openTodoModal()" title="待办事项">📋<span class="badge" id="todoBadge"></span></button>
+
+<div id="view-todo" class="view hidden">
+  <div class="topbar">
+    <span class="link" onclick="backPrev()">← 返回上一级</span>
+    <span class="crumb">待办事项</span>
+    <span class="spacer"></span>
+    <button class="btn btn-sm" onclick="openTodoModal()">⛶ 弹窗模式</button>
+  </div>
+  <div class="page">
+    <div class="page-head"><h2>📋 待办事项</h2><span class="sub" id="todoPageStat" style="font-size:13px"></span></div>
+    <div class="panel"><div style="padding:14px">
+      <div class="todo-board" id="todoPageBoard" style="height:calc(100vh - 215px)"></div>
+    </div></div>
+  </div>
+</div>
 </body>
 </html>
