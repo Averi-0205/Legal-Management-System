@@ -645,7 +645,7 @@ body.ro .todo-check{pointer-events:none}
   <div class="page">
     <div class="page-head"><h2>文书库</h2><span class="sub">上传文书文件，文件名称与上传时间可随时编辑</span></div>
     <div class="panel"><div class="panel-bd">
-      <div class="upzone" id="docUpzone"><div class="big">📤</div><b>点击或拖拽上传文书文件</b><div style="font-size:12px;margin-top:6px">支持 PDF、Word、Excel、图片、压缩包等格式，单文件 ≤ 3MB（内容随数据一并保存，可下载）</div></div>
+      <div class="upzone" id="docUpzone"><div class="big">📤</div><b>点击或拖拽上传文书文件</b><div style="font-size:12px;margin-top:6px">支持 PDF、Word、Excel、图片、压缩包等格式，单文件 ≤ 100MB；默认仅存本机（不占云端），需要多设备共享时点「传云端」</div></div>
       <input type="file" id="docFileInput" multiple class="hidden">
     </div></div>
     <div class="panel"><div class="panel-hd"><h3>已上传文书</h3><span class="sub" id="docCount"></span></div>
@@ -1026,13 +1026,13 @@ const FMT_OK=['zip','rar','7z','pdf','doc','docx','xls','xlsx','html','htm','eml
 function fmtIcon(n){const e=n.split('.').pop().toLowerCase();const m={pdf:'📕',doc:'📘',docx:'📘',xls:'📗',xlsx:'📗',zip:'🗜️',rar:'🗜️','7z':'🗜️',html:'🌐',htm:'🌐',eml:'✉️'};return m[e]||'📄'}
 function litMaterial(c){
   let html=`<div class="panel"><div class="panel-hd"><h3>案件材料</h3></div><div class="panel-bd">
-  <div class="upzone" id="upzone"><div class="big">📤</div><b>点击或拖拽上传案件材料</b><div style="font-size:12px;margin-top:6px">支持压缩包（zip/rar/7z）、PDF、Word（doc/docx）、Excel（xls/xlsx）、HTML、EML 邮件等格式，单文件 ≤ 3MB（内容随数据一并保存，可下载）</div></div>
+  <div class="upzone" id="upzone"><div class="big">📤</div><b>点击或拖拽上传案件材料</b><div style="font-size:12px;margin-top:6px">支持压缩包（zip/rar/7z）、PDF、Word（doc/docx）、Excel（xls/xlsx）、HTML、EML 邮件等格式，单文件 ≤ 100MB；默认仅存本机（不占云端），需要多设备共享时点「传云端」</div></div>
   <input type="file" id="fileInput" multiple class="hidden" accept=".zip,.rar,.7z,.pdf,.doc,.docx,.xls,.xlsx,.html,.htm,.eml,.txt,.png,.jpg,.jpeg">
   <div style="margin-top:18px">`;
   if(!c.materials.length)html+='<div class="empty">暂无案件材料</div>';
   else{
     html+='<table class="tbl"><colgroup><col style="width:6%"><col style="width:34%"><col style="width:12%"><col style="width:12%"><col style="width:16%"><col style="width:20%"></colgroup><thead><tr><th></th><th>文件名</th><th>格式</th><th class="num">大小</th><th>上传时间</th><th>操作</th></tr></thead><tbody>';
-    c.materials.forEach(m=>{html+=`<tr><td class="center">${fmtIcon(m.name)}</td><td>${esc(m.name)}</td><td><span class="tag tag-gray">.${esc(m.ext)}</span></td><td class="num">${m.size}</td><td>${esc(m.time)}</td><td>${m.data?`<button class="btn btn-sm" onclick="previewMat('${m.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadMat('${m.id}')">⬇ 下载</button> `:'<span class="sub" style="font-size:12px">（仅登记）</span> '}<button class="btn btn-sm btn-danger" onclick="delMat('${m.id}')">删除</button></td></tr>`});
+    c.materials.forEach(m=>{html+=`<tr><td class="center">${fmtIcon(m.name)}</td><td>${esc(m.name)}</td><td><span class="tag tag-gray">.${esc(m.ext)}</span> <span class="tag ${m.data?'tag-blue':'tag-orange'}">${m.data?'云端':'本地'}</span></td><td class="num">${m.size}</td><td>${esc(m.time)}</td><td>${m.data?'':`<button class="btn btn-sm btn-primary" onclick="uploadToCloud('case','${m.id}')">⇪ 传云端</button> `}<button class="btn btn-sm" onclick="previewMat('${m.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadMat('${m.id}')">⬇ 下载</button> <button class="btn btn-sm btn-danger" onclick="delMat('${m.id}')">删除</button></td></tr>`});
     html+='</tbody></table>';
   }
   return html+'</div></div></div>';
@@ -1049,11 +1049,10 @@ function bindDropzone(c){
     [...files].forEach(file=>{
       const ext=file.name.split('.').pop().toLowerCase();
       if(!FMT_OK.includes(ext)){toast('不支持的格式：'+file.name);return}
-      const rec={id:uid(),name:file.name,ext,time:new Date().toLocaleString('zh-CN'),size:(file.size/1024).toFixed(1)+' KB',data:null};
-      const done=()=>{c.materials.push(rec);save();renderLitDetail();toast('已上传：'+file.name)};
-      if(file.size<=3*1024*1024){
-        const r=new FileReader();r.onload=()=>{rec.data=r.result;done()};r.readAsDataURL(file);
-      }else{rec.size=(file.size/1048576).toFixed(2)+' MB';done();}
+      const rec={id:uid(),name:file.name,ext,time:new Date().toLocaleString('zh-CN'),size:file.size<1048576?(file.size/1024).toFixed(1)+' KB':(file.size/1048576).toFixed(2)+' MB',data:null,loc:'local'};
+      const done=()=>{c.materials.push(rec);save();renderLitDetail();toast('已保存到本机：'+file.name)};
+      if(file.size>100*1024*1024){toast('单文件不能超过 100MB：'+file.name);return}
+      const r=new FileReader();r.onload=()=>{idbPut(rec.id,r.result).then(done).catch(()=>toast('本机存储空间不足：'+file.name))};r.readAsDataURL(file);
     });
     f.value='';
   }
@@ -1085,15 +1084,55 @@ function previewData(name,data){
   }
   openModal('预览：'+name,'<div class="pv-box">'+inner+'</div>',()=>{if(url)URL.revokeObjectURL(url);return true},'关闭');
 }
-function previewMat(id){const m=curCase&&curCase.materials.find(x=>x.id===id);if(m)previewData(m.name,m.data)}
-function previewFpMat(id){const m=curFpMod&&curFpMod.files&&curFpMod.files.find(x=>x.id===id);if(m)previewData(m.name,m.data)}
-function previewBizMat(id){const m=curClient&&curClient.materials.find(x=>x.id===id);if(m)previewData(m.name,m.data)}
-function previewDocFile(id){const m=(DB.docFiles||[]).find(x=>x.id===id);if(m)previewData(m.name,m.data)}
-function downloadMat(id){
-  const m=curCase.materials.find(x=>x.id===id); if(!m||!m.data)return;
-  const a=document.createElement('a');a.href=m.data;a.download=m.name;a.click();
+function previewMat(id){previewFile('case',id)}
+function previewFpMat(id){previewFile('fp',id)}
+function previewBizMat(id){previewFile('biz',id)}
+function previewDocFile(id){previewFile('doc',id)}
+/* ==================== 本地文件库（IndexedDB，不占云端） ==================== */
+function idbOpen(){return new Promise((res,rej)=>{const r=indexedDB.open('legalms_files',1);r.onupgradeneeded=()=>r.result.createObjectStore('files');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function idbPut(id,data){const db=await idbOpen();return new Promise((res,rej)=>{const tx=db.transaction('files','readwrite');tx.objectStore('files').put(data,id);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
+async function idbGet(id){const db=await idbOpen();return new Promise((res,rej)=>{const q=db.transaction('files').objectStore('files').get(id);q.onsuccess=()=>res(q.result||null);q.onerror=()=>rej(q.error)})}
+async function idbDel(id){try{const db=await idbOpen();db.transaction('files','readwrite').objectStore('files').delete(id)}catch(e){}}
+/* 读取文件内容：云端字段优先，其次本机 IndexedDB */
+async function getFileData(m){
+  if(!m)return null;
+  if(m.data)return m.data;
+  try{return await idbGet(m.id)}catch(e){return null}
 }
-function delMat(id){if(!confirm('确定删除该材料？'))return;curCase.materials=curCase.materials.filter(m=>m.id!==id);save();renderLitDetail();toast('已删除')}
+function _fileRec(scope,id){
+  if(scope==='doc')return(DB.docFiles||[]).find(x=>x.id===id);
+  if(scope==='case')return curCase&&curCase.materials.find(x=>x.id===id);
+  if(scope==='fp')return curFpMod&&curFpMod.files&&curFpMod.files.find(x=>x.id===id);
+  if(scope==='biz')return curClient&&curClient.materials.find(x=>x.id===id);
+}
+function _fileRerender(scope){
+  if(scope==='doc')renderDocs();
+  else if(scope==='case')renderLitDetail();
+  else if(scope==='fp')renderFpRecords();
+  else if(scope==='biz')renderBizDetail();
+}
+/* 一键上传至云端 */
+async function uploadToCloud(scope,id){
+  const m=_fileRec(scope,id);if(!m||m.data)return;
+  toast('正在上传至云端…');
+  const d=await getFileData(m);
+  if(!d){toast('本设备未找到文件内容，无法上传');return}
+  m.data=d;delete m.loc;save();_fileRerender(scope);toast('已上传至云端，其他设备可查看');
+}
+async function previewFile(scope,id){
+  const m=_fileRec(scope,id);if(!m)return;
+  const d=await getFileData(m);
+  if(!d){toast('文件内容不在本机（仅存于原上传设备），无法预览');return}
+  previewData(m.name,d);
+}
+async function downloadFile(scope,id){
+  const m=_fileRec(scope,id);if(!m)return;
+  const d=await getFileData(m);
+  if(!d){toast('文件内容不在本机（仅存于原上传设备），无法下载');return}
+  const a=document.createElement('a');a.href=d;a.download=m.name;a.click();
+}
+function downloadMat(id){downloadFile('case',id)}
+function delMat(id){if(!confirm('确定删除该材料？'))return;idbDel(id);curCase.materials=curCase.materials.filter(m=>m.id!==id);save();renderLitDetail();toast('已删除')}
 function litArrange(c){
   let html=`<div class="panel"><div class="panel-hd"><h3>案件相关安排</h3><span class="spacer"></span><button class="btn btn-sm btn-primary" onclick="openArrModal()">＋ 新增安排</button></div>
   <div class="panel-bd" style="padding:0"><table class="tbl"><colgroup><col style="width:11%"><col style="width:8%"><col style="width:10%"><col style="width:22%"><col style="width:16%"><col style="width:19%"><col style="width:14%"></colgroup>
@@ -1576,13 +1615,13 @@ function delMemoRec(rid){if(!confirm('确定删除该记录？'))return;curMemo.
 function fpFileSection(){
   const m=curFpMod;
   if(!Array.isArray(m.files))m.files=[];
-  let html=`<div class="upzone" id="fpUpzone"><div class="big">📤</div><b>点击或拖拽上传本模块相关文件</b><div style="font-size:12px;margin-top:6px">支持压缩包（zip/rar/7z）、PDF、Word、Excel、图片等格式，单文件 ≤ 3MB（内容随数据一并保存，可下载）</div></div>
+  let html=`<div class="upzone" id="fpUpzone"><div class="big">📤</div><b>点击或拖拽上传本模块相关文件</b><div style="font-size:12px;margin-top:6px">支持压缩包（zip/rar/7z）、PDF、Word、Excel、图片等格式，单文件 ≤ 100MB；默认仅存本机（不占云端），需要多设备共享时点「传云端」</div></div>
   <input type="file" id="fpFileInput" multiple class="hidden">
   <div style="margin-top:14px">`;
   if(!m.files.length)html+='<div class="empty">暂无文件，点击上方区域上传</div>';
   else{
     html+='<table class="tbl"><colgroup><col style="width:6%"><col style="width:36%"><col style="width:12%"><col style="width:12%"><col style="width:16%"><col style="width:18%"></colgroup><thead><tr><th></th><th>文件名</th><th>格式</th><th class="num">大小</th><th>上传时间</th><th>操作</th></tr></thead><tbody>';
-    m.files.forEach(f=>{html+=`<tr><td class="center">${fmtIcon(f.name)}</td><td>${esc(f.name)}</td><td><span class="tag tag-gray">.${esc(f.ext)}</span></td><td class="num">${f.size}</td><td>${esc(f.time)}</td><td>${f.data?`<button class="btn btn-sm" onclick="previewFpMat('${f.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadFpMat('${f.id}')">⬇ 下载</button> `:'<span class="sub" style="font-size:12px">（仅登记）</span> '}<button class="btn btn-sm btn-danger" onclick="delFpMat('${f.id}')">删除</button></td></tr>`});
+    m.files.forEach(f=>{html+=`<tr><td class="center">${fmtIcon(f.name)}</td><td>${esc(f.name)}</td><td><span class="tag tag-gray">.${esc(f.ext)}</span> <span class="tag ${f.data?'tag-blue':'tag-orange'}">${f.data?'云端':'本地'}</span></td><td class="num">${f.size}</td><td>${esc(f.time)}</td><td>${f.data?'':`<button class="btn btn-sm btn-primary" onclick="uploadToCloud('fp','${f.id}')">⇪ 传云端</button> `}<button class="btn btn-sm" onclick="previewFpMat('${f.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadFpMat('${f.id}')">⬇ 下载</button> <button class="btn btn-sm btn-danger" onclick="delFpMat('${f.id}')">删除</button></td></tr>`});
     html+='</tbody></table>';
   }
   return html+'</div>';
@@ -1599,20 +1638,16 @@ function bindFpDropzone(){
     [...files].forEach(file=>{
       const ext=file.name.split('.').pop().toLowerCase();
       if(!FMT_OK.includes(ext)){toast('不支持的格式：'+file.name);return}
-      const rec={id:uid(),name:file.name,ext,time:new Date().toLocaleString('zh-CN'),size:(file.size/1024).toFixed(1)+' KB',data:null};
-      const done=()=>{curFpMod.files.push(rec);save();renderFpRecords();toast('已上传：'+file.name)};
-      if(file.size<=3*1024*1024){
-        const r=new FileReader();r.onload=()=>{rec.data=r.result;done()};r.readAsDataURL(file);
-      }else{rec.size=(file.size/1048576).toFixed(2)+' MB';done();}
+      const rec={id:uid(),name:file.name,ext,time:new Date().toLocaleString('zh-CN'),size:file.size<1048576?(file.size/1024).toFixed(1)+' KB':(file.size/1048576).toFixed(2)+' MB',data:null,loc:'local'};
+      const done=()=>{curFpMod.files.push(rec);save();renderFpRecords();toast('已保存到本机：'+file.name)};
+      if(file.size>100*1024*1024){toast('单文件不能超过 100MB：'+file.name);return}
+      const r=new FileReader();r.onload=()=>{idbPut(rec.id,r.result).then(done).catch(()=>toast('本机存储空间不足：'+file.name))};r.readAsDataURL(file);
     });
     f.value='';
   }
 }
-function downloadFpMat(id){
-  const m=curFpMod.files.find(x=>x.id===id);if(!m||!m.data)return;
-  const a=document.createElement('a');a.href=m.data;a.download=m.name;a.click();
-}
-function delFpMat(id){if(!confirm('确定删除该文件？'))return;curFpMod.files=curFpMod.files.filter(m=>m.id!==id);save();renderFpRecords();toast('已删除')}
+function downloadFpMat(id){downloadFile('fp',id)}
+function delFpMat(id){if(!confirm('确定删除该文件？'))return;idbDel(id);curFpMod.files=curFpMod.files.filter(m=>m.id!==id);save();renderFpRecords();toast('已删除')}
 
 /* ==================== 数据导入导出 ==================== */
 function exportData(){
@@ -1854,13 +1889,13 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElemen
 <script>
 /* ==================== 商办法律分析 · 相关材料 ==================== */
 function bizMaterial(c){
-  let html=`<div class="upzone" id="bizUpzone"><div class="big">📤</div><b>点击或拖拽上传客户相关材料</b><div style="font-size:12px;margin-top:6px">支持压缩包（zip/rar/7z）、PDF、Word（doc/docx）、Excel（xls/xlsx）、HTML、EML 邮件、图片等格式，单文件 ≤ 3MB（内容随数据一并保存，可下载）</div></div>
+  let html=`<div class="upzone" id="bizUpzone"><div class="big">📤</div><b>点击或拖拽上传客户相关材料</b><div style="font-size:12px;margin-top:6px">支持压缩包（zip/rar/7z）、PDF、Word（doc/docx）、Excel（xls/xlsx）、HTML、EML 邮件、图片等格式，单文件 ≤ 100MB；默认仅存本机（不占云端），需要多设备共享时点「传云端」</div></div>
   <input type="file" id="bizFileInput" multiple class="hidden" accept=".zip,.rar,.7z,.pdf,.doc,.docx,.xls,.xlsx,.html,.htm,.eml,.txt,.png,.jpg,.jpeg">
   <div style="margin-top:18px">`;
   if(!c.materials.length)html+='<div class="empty">暂无相关材料</div>';
   else{
     html+='<table class="tbl"><colgroup><col style="width:6%"><col style="width:34%"><col style="width:12%"><col style="width:12%"><col style="width:16%"><col style="width:20%"></colgroup><thead><tr><th></th><th>文件名</th><th>格式</th><th class="num">大小</th><th>上传时间</th><th>操作</th></tr></thead><tbody>';
-    c.materials.forEach(m=>{html+=`<tr><td class="center">${fmtIcon(m.name)}</td><td>${esc(m.name)}</td><td><span class="tag tag-gray">.${esc(m.ext)}</span></td><td class="num">${m.size}</td><td>${esc(m.time)}</td><td>${m.data?`<button class="btn btn-sm" onclick="previewBizMat('${m.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadBizMat('${m.id}')">⬇ 下载</button> `:'<span class="sub" style="font-size:12px">（仅登记）</span> '}<button class="btn btn-sm btn-danger" onclick="delBizMat('${m.id}')">删除</button></td></tr>`});
+    c.materials.forEach(m=>{html+=`<tr><td class="center">${fmtIcon(m.name)}</td><td>${esc(m.name)}</td><td><span class="tag tag-gray">.${esc(m.ext)}</span> <span class="tag ${m.data?'tag-blue':'tag-orange'}">${m.data?'云端':'本地'}</span></td><td class="num">${m.size}</td><td>${esc(m.time)}</td><td>${m.data?'':`<button class="btn btn-sm btn-primary" onclick="uploadToCloud('biz','${m.id}')">⇪ 传云端</button> `}<button class="btn btn-sm" onclick="previewBizMat('${m.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadBizMat('${m.id}')">⬇ 下载</button> <button class="btn btn-sm btn-danger" onclick="delBizMat('${m.id}')">删除</button></td></tr>`});
     html+='</tbody></table>';
   }
   return html+'</div>';
@@ -1877,20 +1912,16 @@ function bindBizDropzone(c){
     [...files].forEach(file=>{
       const ext=file.name.split('.').pop().toLowerCase();
       if(!FMT_OK.includes(ext)){toast('不支持的格式：'+file.name);return}
-      const rec={id:uid(),name:file.name,ext,time:new Date().toLocaleString('zh-CN'),size:(file.size/1024).toFixed(1)+' KB',data:null};
-      const done=()=>{c.materials.push(rec);save();renderBizDetail();toast('已上传：'+file.name)};
-      if(file.size<=3*1024*1024){
-        const r=new FileReader();r.onload=()=>{rec.data=r.result;done()};r.readAsDataURL(file);
-      }else{rec.size=(file.size/1048576).toFixed(2)+' MB';done();}
+      const rec={id:uid(),name:file.name,ext,time:new Date().toLocaleString('zh-CN'),size:file.size<1048576?(file.size/1024).toFixed(1)+' KB':(file.size/1048576).toFixed(2)+' MB',data:null,loc:'local'};
+      const done=()=>{c.materials.push(rec);save();renderBizDetail();toast('已保存到本机：'+file.name)};
+      if(file.size>100*1024*1024){toast('单文件不能超过 100MB：'+file.name);return}
+      const r=new FileReader();r.onload=()=>{idbPut(rec.id,r.result).then(done).catch(()=>toast('本机存储空间不足：'+file.name))};r.readAsDataURL(file);
     });
     f.value='';
   }
 }
-function downloadBizMat(id){
-  const m=curClient.materials.find(x=>x.id===id); if(!m||!m.data)return;
-  const a=document.createElement('a');a.href=m.data;a.download=m.name;a.click();
-}
-function delBizMat(id){if(!confirm('确定删除该材料？'))return;curClient.materials=curClient.materials.filter(m=>m.id!==id);save();renderBizDetail();toast('已删除')}
+function downloadBizMat(id){downloadFile('biz',id)}
+function delBizMat(id){if(!confirm('确定删除该材料？'))return;idbDel(id);curClient.materials=curClient.materials.filter(m=>m.id!==id);save();renderBizDetail();toast('已删除')}
 
 /* ==================== Excel 批量导入（费用） ==================== */
 function xlsxReady(){return typeof XLSX!=='undefined'}
@@ -2182,7 +2213,7 @@ function renderDocs(){
   const cnt=document.getElementById('docCount');if(cnt)cnt.textContent='共 '+list.length+' 个文件';
   let html='<table class="tbl"><colgroup><col style="width:6%"><col style="width:34%"><col style="width:12%"><col style="width:12%"><col style="width:18%"><col style="width:18%"></colgroup><thead><tr><th></th><th>文件名称</th><th>格式</th><th class="num">大小</th><th>上传时间</th><th>操作</th></tr></thead><tbody>';
   if(!list.length)html+='<tr><td colspan="6"><div class="empty">暂无文书，点击上方区域上传</div></td></tr>';
-  list.forEach(f=>{html+=`<tr><td class="center">${fmtIcon(f.name)}</td><td>${esc(f.name)}</td><td><span class="tag tag-gray">.${esc(f.ext)}</span></td><td class="num">${esc(f.size)}</td><td>${esc(f.time)}</td><td>${f.data?`<button class="btn btn-sm" onclick="previewDocFile('${f.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadDocFile('${f.id}')">⬇ 下载</button> `:'<span class="sub" style="font-size:12px">（仅登记）</span> '}<button class="btn btn-sm" onclick="editDocFile('${f.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delDocFile('${f.id}')">删除</button></td></tr>`});
+  list.forEach(f=>{html+=`<tr><td class="center">${fmtIcon(f.name)}</td><td>${esc(f.name)}</td><td><span class="tag tag-gray">.${esc(f.ext)}</span> <span class="tag ${f.data?'tag-blue':'tag-orange'}">${f.data?'云端':'本地'}</span></td><td class="num">${esc(f.size)}</td><td>${esc(f.time)}</td><td>${f.data?'':`<button class="btn btn-sm btn-primary" onclick="uploadToCloud('doc','${f.id}')">⇪ 传云端</button> `}<button class="btn btn-sm" onclick="previewDocFile('${f.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadDocFile('${f.id}')">⬇ 下载</button> <button class="btn btn-sm" onclick="editDocFile('${f.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delDocFile('${f.id}')">删除</button></td></tr>`});
   wrap.innerHTML=html+'</tbody></table>';
   bindDocDropzone();
 }
@@ -2200,18 +2231,14 @@ function handleDocFiles(files){
   [...files].forEach(file=>{
     const ext=file.name.split('.').pop().toLowerCase();
     if(!FMT_OK.includes(ext)){toast('不支持的格式：'+file.name);return}
-    const rec={id:uid(),name:file.name,ext,time:new Date().toLocaleString('zh-CN'),size:(file.size/1024).toFixed(1)+' KB',data:null};
-    const done=()=>{DB.docFiles.push(rec);save();renderDocs();toast('已上传：'+file.name)};
-    if(file.size<=3*1024*1024){
-      const r=new FileReader();r.onload=()=>{rec.data=r.result;done()};r.readAsDataURL(file);
-    }else{rec.size=(file.size/1048576).toFixed(2)+' MB';done();}
+    const rec={id:uid(),name:file.name,ext,time:new Date().toLocaleString('zh-CN'),size:file.size<1048576?(file.size/1024).toFixed(1)+' KB':(file.size/1048576).toFixed(2)+' MB',data:null,loc:'local'};
+    const done=()=>{DB.docFiles.push(rec);save();renderDocs();toast('已保存到本机：'+file.name)};
+    if(file.size>100*1024*1024){toast('单文件不能超过 100MB：'+file.name);return}
+    const r=new FileReader();r.onload=()=>{idbPut(rec.id,r.result).then(done).catch(()=>toast('本机存储空间不足：'+file.name))};r.readAsDataURL(file);
   });
   if(f)f.value='';
 }
-function downloadDocFile(id){
-  const m=(DB.docFiles||[]).find(x=>x.id===id);if(!m||!m.data)return;
-  const a=document.createElement('a');a.href=m.data;a.download=m.name;a.click();
-}
+function downloadDocFile(id){downloadFile('doc',id)}
 function editDocFile(id){
   const m=(DB.docFiles||[]).find(x=>x.id===id);if(!m)return;
   openModal('编辑文书信息',`<div class="frm-row">
@@ -2222,7 +2249,7 @@ function editDocFile(id){
     save();renderDocs();toast('已保存');return true;
   });
 }
-function delDocFile(id){if(!confirm('确定删除该文书文件？'))return;DB.docFiles=DB.docFiles.filter(x=>x.id!==id);save();renderDocs();toast('已删除')}
+function delDocFile(id){if(!confirm('确定删除该文书文件？'))return;idbDel(id);DB.docFiles=DB.docFiles.filter(x=>x.id!==id);save();renderDocs();toast('已删除')}
 /* ==================== 数据报表 ==================== */
 function renderReport(){
   const w=document.getElementById('reportWrap');if(!w)return;
