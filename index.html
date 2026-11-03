@@ -193,6 +193,7 @@ table.tbl tbody tr:hover{background:rgba(255,255,255,0.3)}
 /* 右栏 */
 .right-col{position:sticky;top:22px;display:flex;flex-direction:column;gap:18px;min-width:0}
 .rp{padding:18px}
+.rp.search-rp{position:relative;z-index:70}
 .rp h4{font-size:13.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px;color:var(--text)}
 .rp h4 svg{color:var(--primary)}
 .gsearch{position:relative}
@@ -430,7 +431,7 @@ body.ro .todo-check{pointer-events:none}
 
     <!-- 右侧面板 -->
     <aside class="right-col">
-      <div class="rp glass-panel">
+      <div class="rp glass-panel search-rp">
         <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M20.5 20.5 16 16"/></svg>全局搜索</h4>
         <div class="gsearch">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M20.5 20.5 16 16"/></svg>
@@ -503,7 +504,7 @@ body.ro .todo-check{pointer-events:none}
       <div class="fee-card" onclick="go('lit')">
         <div class="fi"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6a6fd6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7.5" width="17" height="12.5" rx="3"/><path d="M9 7.5V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1.5"/><path d="M3.5 12.5h17"/></svg></div>
         <h3>诉讼管理</h3>
-        <p>案件总览、案件详情、案件进程<br>案件费用、案件材料、相关安排</p>
+        <p>案件总览、案件详情（含材料）<br>案件进程、费用、相关安排</p>
         <div class="amt" style="font-size:16px" id="cnt-lit2"></div>
       </div>
     </div>
@@ -897,7 +898,7 @@ function val(id){return document.getElementById(id).value.trim()}
 function setErr(id,msg){const e=document.getElementById(id);e.style.borderColor='var(--red)';toast(msg);return false}
 
 /* ==================== 诉讼管理 ==================== */
-const LIT_TABS=[['overview','案件总览'],['detail','案件详情'],['process','案件进程'],['cost','案件费用'],['material','案件材料'],['arrange','相关安排'],['review','复盘与执行']];
+const LIT_TABS=[['overview','案件总览'],['detail','案件详情'],['process','案件进程'],['cost','案件费用'],['arrange','相关安排'],['review','复盘与执行']];
 let curCase=null, litTab='overview';
 
 function renderLitList(){
@@ -934,10 +935,9 @@ function renderLitDetail(){
   document.getElementById('litTabs').innerHTML=LIT_TABS.map(t=>`<div class="tab ${litTab===t[0]?'on':''}" onclick="litTab='${t[0]}';renderLitDetail()">${t[1]}</div>`).join('');
   const B=document.getElementById('litTabBody');
   if(litTab==='overview')B.innerHTML=litOverview(c);
-  else if(litTab==='detail')B.innerHTML=litDetail(c);
+  else if(litTab==='detail'){B.innerHTML=litDetail(c);bindDropzone(c);}
   else if(litTab==='process')B.innerHTML=litProcess(c);
   else if(litTab==='cost')B.innerHTML=litCost(c);
-  else if(litTab==='material'){B.innerHTML=litMaterial(c);bindDropzone(c);}
   else if(litTab==='arrange')B.innerHTML=litArrange(c);
   else if(litTab==='review')B.innerHTML=litReview(c);
 }
@@ -961,7 +961,11 @@ function litDetail(c){
   ${infoCell('我方角色',esc(c.role))}${infoCell('对方当事人',esc(c.oppo))}${infoCell('承办法官','李法官')}${infoCell('联系电话','021-5882xxxx')}
   ${infoCell('立案日期',esc(c.filingDate))}${infoCell('开庭日期（最近）',c.arrangements.filter(a=>a.type==='开庭').map(a=>a.date).sort()[0]||'待定')}${infoCell('案件状态',`<span class="tag tag-blue">${esc(c.status)}</span>`)}${infoCell('争议标的额（元）',`<span class="num">${money(c.amount)}</span>`)}
   </div>
-  <div class="info-block" style="margin-top:18px"><h4>诉讼请求 / 案件详情</h4><div class="txt">${esc(c.summary)||'—'}</div></div></div></div>`;
+  <div class="info-block" style="margin-top:18px"><h4>诉讼请求 / 案件详情</h4><div class="txt">${esc(c.summary)||'—'}</div></div>
+  <div class="info-block" style="margin-top:18px"><h4>上传案件材料</h4>
+  <div class="upzone" id="upzone" style="margin-top:18px"><div class="big">📤</div><b>点击或拖拽上传案件材料</b><div style="font-size:12px;margin-top:6px">支持压缩包（zip/rar/7z）、PDF、Word（doc/docx）、Excel（xls/xlsx）、HTML、EML 邮件等格式，单文件 ≤ 100MB；默认仅存本机（不占云端），需要多设备共享时点「传云端」</div></div>
+  <input type="file" id="fileInput" multiple class="hidden" accept=".zip,.rar,.7z,.pdf,.doc,.docx,.xls,.xlsx,.html,.htm,.eml,.txt,.png,.jpg,.jpeg">
+  <div style="margin-top:18px">${litMaterial(c)}</div></div></div></div>`;
 }
 const STAGES=['诉前','一审','二审','执行'];
 function litProcess(c){
@@ -1025,17 +1029,14 @@ function delCost(i){if(!confirm('确定删除该费用记录？'))return;curCase
 const FMT_OK=['zip','rar','7z','pdf','doc','docx','xls','xlsx','html','htm','eml','txt','png','jpg','jpeg'];
 function fmtIcon(n){const e=n.split('.').pop().toLowerCase();const m={pdf:'📕',doc:'📘',docx:'📘',xls:'📗',xlsx:'📗',zip:'🗜️',rar:'🗜️','7z':'🗜️',html:'🌐',htm:'🌐',eml:'✉️'};return m[e]||'📄'}
 function litMaterial(c){
-  let html=`<div class="panel"><div class="panel-hd"><h3>案件材料</h3></div><div class="panel-bd">
-  <div class="upzone" id="upzone"><div class="big">📤</div><b>点击或拖拽上传案件材料</b><div style="font-size:12px;margin-top:6px">支持压缩包（zip/rar/7z）、PDF、Word（doc/docx）、Excel（xls/xlsx）、HTML、EML 邮件等格式，单文件 ≤ 100MB；默认仅存本机（不占云端），需要多设备共享时点「传云端」</div></div>
-  <input type="file" id="fileInput" multiple class="hidden" accept=".zip,.rar,.7z,.pdf,.doc,.docx,.xls,.xlsx,.html,.htm,.eml,.txt,.png,.jpg,.jpeg">
-  <div style="margin-top:18px">`;
+  let html='';
   if(!c.materials.length)html+='<div class="empty">暂无案件材料</div>';
   else{
     html+='<table class="tbl"><colgroup><col style="width:6%"><col style="width:34%"><col style="width:12%"><col style="width:12%"><col style="width:16%"><col style="width:20%"></colgroup><thead><tr><th></th><th>文件名</th><th>格式</th><th class="num">大小</th><th>上传时间</th><th>操作</th></tr></thead><tbody>';
-    c.materials.forEach(m=>{html+=`<tr><td class="center">${fmtIcon(m.name)}</td><td>${esc(m.name)}</td><td><span class="tag tag-gray">.${esc(m.ext)}</span> <span class="tag ${m.data?'tag-blue':'tag-orange'}">${m.data?'云端':'本地'}</span></td><td class="num">${m.size}</td><td>${esc(m.time)}</td><td>${m.data?'':`<button class="btn btn-sm btn-primary" onclick="uploadToCloud('case','${m.id}')">⇪ 传云端</button> `}<button class="btn btn-sm" onclick="previewMat('${m.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadMat('${m.id}')">⬇ 下载</button> <button class="btn btn-sm btn-danger" onclick="delMat('${m.id}')">删除</button></td></tr>`});
+    c.materials.forEach(m=>{html+=`<tr><td class="center">${fmtIcon(m.name)}</td><td>${esc(m.name)}</td><td><span class="tag tag-gray">.${esc(m.ext)}</span> <span class="tag ${m.data?'tag-blue':'tag-orange'}">${m.data?'云端':'本地'}</span></td><td class="num">${m.size}</td><td>${esc(m.time)}</td><td style="white-space:nowrap">${m.data?'':`<button class="btn btn-sm btn-primary" onclick="uploadToCloud('case','${m.id}')">⇪ 传云端</button> `}<button class="btn btn-sm" onclick="previewMat('${m.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadMat('${m.id}')">⬇ 下载</button> <button class="btn btn-sm btn-danger" onclick="delMat('${m.id}')">删除</button></td></tr>`});
     html+='</tbody></table>';
   }
-  return html+'</div></div></div>';
+  return html;
 }
 function bindDropzone(c){
   const z=document.getElementById('upzone'),f=document.getElementById('fileInput');
@@ -1621,7 +1622,7 @@ function fpFileSection(){
   if(!m.files.length)html+='<div class="empty">暂无文件，点击上方区域上传</div>';
   else{
     html+='<table class="tbl"><colgroup><col style="width:6%"><col style="width:36%"><col style="width:12%"><col style="width:12%"><col style="width:16%"><col style="width:18%"></colgroup><thead><tr><th></th><th>文件名</th><th>格式</th><th class="num">大小</th><th>上传时间</th><th>操作</th></tr></thead><tbody>';
-    m.files.forEach(f=>{html+=`<tr><td class="center">${fmtIcon(f.name)}</td><td>${esc(f.name)}</td><td><span class="tag tag-gray">.${esc(f.ext)}</span> <span class="tag ${f.data?'tag-blue':'tag-orange'}">${f.data?'云端':'本地'}</span></td><td class="num">${f.size}</td><td>${esc(f.time)}</td><td>${f.data?'':`<button class="btn btn-sm btn-primary" onclick="uploadToCloud('fp','${f.id}')">⇪ 传云端</button> `}<button class="btn btn-sm" onclick="previewFpMat('${f.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadFpMat('${f.id}')">⬇ 下载</button> <button class="btn btn-sm btn-danger" onclick="delFpMat('${f.id}')">删除</button></td></tr>`});
+    m.files.forEach(f=>{html+=`<tr><td class="center">${fmtIcon(f.name)}</td><td>${esc(f.name)}</td><td><span class="tag tag-gray">.${esc(f.ext)}</span> <span class="tag ${f.data?'tag-blue':'tag-orange'}">${f.data?'云端':'本地'}</span></td><td class="num">${f.size}</td><td>${esc(f.time)}</td><td style="white-space:nowrap">${f.data?'':`<button class="btn btn-sm btn-primary" onclick="uploadToCloud('fp','${f.id}')">⇪ 传云端</button> `}<button class="btn btn-sm" onclick="previewFpMat('${f.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadFpMat('${f.id}')">⬇ 下载</button> <button class="btn btn-sm btn-danger" onclick="delFpMat('${f.id}')">删除</button></td></tr>`});
     html+='</tbody></table>';
   }
   return html+'</div>';
@@ -1895,7 +1896,7 @@ function bizMaterial(c){
   if(!c.materials.length)html+='<div class="empty">暂无相关材料</div>';
   else{
     html+='<table class="tbl"><colgroup><col style="width:6%"><col style="width:34%"><col style="width:12%"><col style="width:12%"><col style="width:16%"><col style="width:20%"></colgroup><thead><tr><th></th><th>文件名</th><th>格式</th><th class="num">大小</th><th>上传时间</th><th>操作</th></tr></thead><tbody>';
-    c.materials.forEach(m=>{html+=`<tr><td class="center">${fmtIcon(m.name)}</td><td>${esc(m.name)}</td><td><span class="tag tag-gray">.${esc(m.ext)}</span> <span class="tag ${m.data?'tag-blue':'tag-orange'}">${m.data?'云端':'本地'}</span></td><td class="num">${m.size}</td><td>${esc(m.time)}</td><td>${m.data?'':`<button class="btn btn-sm btn-primary" onclick="uploadToCloud('biz','${m.id}')">⇪ 传云端</button> `}<button class="btn btn-sm" onclick="previewBizMat('${m.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadBizMat('${m.id}')">⬇ 下载</button> <button class="btn btn-sm btn-danger" onclick="delBizMat('${m.id}')">删除</button></td></tr>`});
+    c.materials.forEach(m=>{html+=`<tr><td class="center">${fmtIcon(m.name)}</td><td>${esc(m.name)}</td><td><span class="tag tag-gray">.${esc(m.ext)}</span> <span class="tag ${m.data?'tag-blue':'tag-orange'}">${m.data?'云端':'本地'}</span></td><td class="num">${m.size}</td><td>${esc(m.time)}</td><td style="white-space:nowrap">${m.data?'':`<button class="btn btn-sm btn-primary" onclick="uploadToCloud('biz','${m.id}')">⇪ 传云端</button> `}<button class="btn btn-sm" onclick="previewBizMat('${m.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadBizMat('${m.id}')">⬇ 下载</button> <button class="btn btn-sm btn-danger" onclick="delBizMat('${m.id}')">删除</button></td></tr>`});
     html+='</tbody></table>';
   }
   return html+'</div>';
@@ -2213,7 +2214,7 @@ function renderDocs(){
   const cnt=document.getElementById('docCount');if(cnt)cnt.textContent='共 '+list.length+' 个文件';
   let html='<table class="tbl"><colgroup><col style="width:6%"><col style="width:34%"><col style="width:12%"><col style="width:12%"><col style="width:18%"><col style="width:18%"></colgroup><thead><tr><th></th><th>文件名称</th><th>格式</th><th class="num">大小</th><th>上传时间</th><th>操作</th></tr></thead><tbody>';
   if(!list.length)html+='<tr><td colspan="6"><div class="empty">暂无文书，点击上方区域上传</div></td></tr>';
-  list.forEach(f=>{html+=`<tr><td class="center">${fmtIcon(f.name)}</td><td>${esc(f.name)}</td><td><span class="tag tag-gray">.${esc(f.ext)}</span> <span class="tag ${f.data?'tag-blue':'tag-orange'}">${f.data?'云端':'本地'}</span></td><td class="num">${esc(f.size)}</td><td>${esc(f.time)}</td><td>${f.data?'':`<button class="btn btn-sm btn-primary" onclick="uploadToCloud('doc','${f.id}')">⇪ 传云端</button> `}<button class="btn btn-sm" onclick="previewDocFile('${f.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadDocFile('${f.id}')">⬇ 下载</button> <button class="btn btn-sm" onclick="editDocFile('${f.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delDocFile('${f.id}')">删除</button></td></tr>`});
+  list.forEach(f=>{html+=`<tr><td class="center">${fmtIcon(f.name)}</td><td>${esc(f.name)}</td><td><span class="tag tag-gray">.${esc(f.ext)}</span> <span class="tag ${f.data?'tag-blue':'tag-orange'}">${f.data?'云端':'本地'}</span></td><td class="num">${esc(f.size)}</td><td>${esc(f.time)}</td><td style="white-space:nowrap">${f.data?'':`<button class="btn btn-sm btn-primary" onclick="uploadToCloud('doc','${f.id}')">⇪ 传云端</button> `}<button class="btn btn-sm" onclick="previewDocFile('${f.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadDocFile('${f.id}')">⬇ 下载</button> <button class="btn btn-sm" onclick="editDocFile('${f.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delDocFile('${f.id}')">删除</button></td></tr>`});
   wrap.innerHTML=html+'</tbody></table>';
   bindDocDropzone();
 }
