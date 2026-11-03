@@ -4,190 +4,353 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>法务管理系统</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236a6fd6'/%3E%3Crect x='7' y='9' width='18' height='16' rx='2.5' fill='none' stroke='white' stroke-width='2'/%3E%3Cpath d='M7 14h18' stroke='white' stroke-width='2'/%3E%3Ccircle cx='12' cy='19.5' r='1.8' fill='white'/%3E%3Ccircle cx='20' cy='19.5' r='1.8' fill='white'/%3E%3C/svg%3E">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{
-  --primary:#2563eb; --primary-d:#1e40af; --bg:#f7f8fa; --card:#ffffff;
-  --line:#e5e7eb; --text:#1f2937; --sub:#6b7280; --soft:#f3f4f6;
-  --green:#16a34a; --orange:#d97706; --red:#dc2626; --radius:12px;
-  --shadow:0 1px 3px rgba(16,24,40,.08),0 1px 2px rgba(16,24,40,.06);
-  --shadow-lg:0 10px 30px rgba(16,24,40,.12);
+  --primary:#6a6fd6; --primary-d:#5559bd;
+  --text:#333644; --sub:#787b8c;
+  --glass:rgba(255,255,255,0.32); --glass-hi:rgba(255,255,255,0.52);
+  --glass-line:rgba(255,255,255,0.55);
+  --line:rgba(120,123,140,0.14);
+  --green:#3d9d6e; --orange:#c98a2d; --red:#cf5b5b;
+  --radius:22px;
+  --shadow:0 4px 24px rgba(90,95,140,0.07);
+  --shadow-lg:0 14px 44px rgba(90,95,140,0.14);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%}
-body{font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased}
+body{font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased;
+  background:linear-gradient(135deg,#e6e8f2 0%,#e8e2f0 52%,#e4e9f6 100%) fixed;min-height:100vh;position:relative;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(620px 460px at 12% 8%,rgba(255,255,255,.55),transparent 65%),
+             radial-gradient(700px 520px at 88% 90%,rgba(196,181,232,.30),transparent 65%),
+             radial-gradient(520px 420px at 82% 10%,rgba(168,190,234,.30),transparent 65%)}
 .hidden{display:none!important}
 .num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
 .center{text-align:center}
 .sub{color:var(--sub)}
 .tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;line-height:20px;white-space:nowrap}
-.tag-blue{background:#eff6ff;color:#1d4ed8}
-.tag-green{background:#f0fdf4;color:#15803d}
-.tag-orange{background:#fff7ed;color:#c2410c}
-.tag-red{background:#fef2f2;color:#b91c1c}
-.tag-gray{background:var(--soft);color:var(--sub)}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--text);font-size:13px;cursor:pointer;transition:.15s;white-space:nowrap}
-.btn:hover{border-color:var(--primary);color:var(--primary)}
-.btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
-.btn-primary:hover{background:var(--primary-d);color:#fff}
-.btn-danger:hover{border-color:var(--red);color:var(--red)}
-.btn-sm{padding:4px 10px;font-size:12px;border-radius:6px}
+.tag-blue{background:rgba(106,111,214,.13);color:#5054b8}
+.tag-green{background:rgba(61,157,110,.13);color:#2e7d57}
+.tag-orange{background:rgba(201,138,45,.14);color:#a56f22}
+.tag-red{background:rgba(207,91,91,.13);color:#b04444}
+.tag-gray{background:rgba(120,123,140,.12);color:var(--sub)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:16px;border:1px solid var(--glass-line);
+  background:rgba(255,255,255,0.42);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  color:var(--text);font-size:13px;cursor:pointer;transition:.18s;white-space:nowrap;box-shadow:0 2px 10px rgba(90,95,140,.06)}
+.btn:hover{background:rgba(255,255,255,0.66);border-color:rgba(255,255,255,0.85);color:var(--primary-d);transform:translateY(-1px)}
+.btn-primary{background:linear-gradient(135deg,#7c80e0,#686cd2);border-color:rgba(255,255,255,.35);color:#fff}
+.btn-primary:hover{background:linear-gradient(135deg,#8a8de6,#7175da);color:#fff}
+.btn-danger:hover{border-color:rgba(207,91,91,.5);color:var(--red)}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:12px}
 /* ---------- 登录 ---------- */
-#view-login{height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f8fafc 0%,#eef2ff 100%)}
-.login-card{width:400px;background:#fff;border-radius:16px;box-shadow:var(--shadow-lg);padding:44px 40px}
-.login-logo{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#2563eb,#4f46e5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;margin:0 auto 16px}
+#view-login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.login-card{width:400px;max-width:92vw;background:rgba(255,255,255,0.4);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--glass-line);border-radius:26px;box-shadow:var(--shadow-lg);padding:44px 40px}
+.login-logo{width:58px;height:58px;border-radius:18px;background:linear-gradient(135deg,#8a8de6,#6a6fd6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;margin:0 auto 16px;box-shadow:0 6px 18px rgba(106,111,214,.35)}
 .login-card h1{font-size:20px;text-align:center;margin-bottom:4px}
 .login-card p{text-align:center;color:var(--sub);font-size:13px;margin-bottom:28px}
 .field{margin-bottom:16px}
 .field label{display:block;font-size:13px;color:var(--sub);margin-bottom:6px}
-.field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;background:#fff;transition:.15s}
-.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.field input,.field select,.field textarea{width:100%;padding:11px 14px;border:1px solid var(--glass-line);border-radius:14px;font-size:14px;font-family:inherit;
+  background:rgba(255,255,255,0.5);transition:.18s;color:var(--text)}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:rgba(106,111,214,.6);box-shadow:0 0 0 4px rgba(106,111,214,.13);background:rgba(255,255,255,.72)}
 .field textarea{resize:vertical;min-height:72px}
-.login-btn{width:100%;padding:11px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-size:15px;cursor:pointer;margin-top:6px}
-.login-btn:hover{background:var(--primary-d)}
+.login-btn{width:100%;padding:12px;border:none;border-radius:16px;background:linear-gradient(135deg,#7c80e0,#686cd2);color:#fff;font-size:15px;cursor:pointer;margin-top:6px;transition:.18s}
+.login-btn:hover{filter:brightness(1.06)}
 .login-tip{margin-top:14px;text-align:center;font-size:12px;color:var(--sub)}
-/* ---------- 工作台 ---------- */
-.topbar{height:60px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:20}
+/* ---------- 通用顶栏（子页面） ---------- */
+.topbar{min-height:60px;background:rgba(255,255,255,0.38);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--glass-line);display:flex;align-items:center;padding:10px 28px;gap:16px;position:sticky;top:0;z-index:20;flex-wrap:wrap}
 .topbar .crumb{font-size:15px;font-weight:600}
 .topbar .spacer{flex:1}
 .topbar .who{color:var(--sub);font-size:13px}
-.dash-wrap{min-height:calc(100vh - 60px);padding:24px;display:flex;flex-direction:column;gap:24px}
-.dash-head{display:flex;align-items:baseline;justify-content:space-between}
-.dash-head h2{font-size:20px}
-.dash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;padding-bottom:8px}
-.dash-card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:.2s;padding:32px;text-align:center;min-height:215px}
-.dash-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:#c7d7fe}
-.dash-card.dev{cursor:default;background:repeating-linear-gradient(45deg,#fff,#fff 12px,#fafafa 12px,#fafafa 24px)}
-.dash-card.dev:hover{transform:none;box-shadow:var(--shadow)}
-.dash-icon{width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:32px}
-.di-blue{background:#eff6ff}.di-indigo{background:#eef2ff}.di-teal{background:#f0fdfa}.di-gray{background:var(--soft)}
-.dash-card h3{font-size:18px}
-.dash-card p{color:var(--sub);font-size:13px;line-height:1.7}
-.dash-card .cnt{font-size:12px;color:var(--sub)}
-@media(max-width:1100px){.dash-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:640px){.dash-grid{grid-template-columns:1fr}}
 /* ---------- 通用页面 ---------- */
 .page{padding:24px 28px;max-width:1500px;margin:0 auto}
 .page-head{display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap}
 .page-head h2{font-size:18px}
-.panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.panel{background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--glass-line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;transition:.2s}
+.panel:hover{background:rgba(255,255,255,0.4)}
 .panel + .panel{margin-top:20px}
-.panel-hd{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
+.panel-hd{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .panel-hd h3{font-size:15px}
 .panel-hd .spacer{flex:1}
 .panel-bd{padding:20px}
 /* 表格 */
 table.tbl{width:100%;border-collapse:collapse;table-layout:fixed}
-table.tbl th{background:#fafbfc;color:var(--sub);font-weight:600;font-size:12.5px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
-table.tbl td{padding:11px 14px;border-bottom:1px solid #f1f2f4;font-size:13.5px;vertical-align:middle;word-break:break-all}
+table.tbl th{background:rgba(255,255,255,0.28);color:var(--sub);font-weight:600;font-size:12.5px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+table.tbl td{padding:11px 14px;border-bottom:1px solid rgba(120,123,140,.08);font-size:13.5px;vertical-align:middle;word-break:break-all}
 table.tbl tbody tr:last-child td{border-bottom:none}
-table.tbl tbody tr:hover{background:#f8faff}
+table.tbl tbody tr:hover{background:rgba(255,255,255,0.3)}
 .link{color:var(--primary);cursor:pointer;font-weight:600}
 .link:hover{text-decoration:underline}
 .empty{padding:44px 20px;text-align:center;color:var(--sub);font-size:13px}
 /* 详情布局 */
-.info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.info-item{padding:12px 16px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff}
+.info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.info-item{padding:12px 16px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:rgba(255,255,255,0.24)}
 .info-item .k{font-size:12px;color:var(--sub);margin-bottom:4px}
 .info-item .v{font-size:14px;font-weight:500;word-break:break-all}
 .info-block{margin-bottom:18px}
 .info-block h4{font-size:13px;color:var(--sub);margin-bottom:8px;font-weight:600}
-.info-block .txt{background:#fafbfc;border:1px solid var(--line);border-radius:8px;padding:12px 14px;line-height:1.8;font-size:13.5px;white-space:pre-wrap;word-break:break-word}
+.info-block .txt{background:rgba(255,255,255,0.3);border:1px solid var(--line);border-radius:14px;padding:12px 14px;line-height:1.8;font-size:13.5px;white-space:pre-wrap;word-break:break-word}
 /* Tabs */
 .tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin-bottom:20px;overflow-x:auto}
-.tab{padding:10px 18px;font-size:14px;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;font-weight:500}
-.tab:hover{color:var(--primary)}
+.tab{padding:10px 18px;font-size:14px;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;font-weight:500;border-radius:10px 10px 0 0}
+.tab:hover{color:var(--primary);background:rgba(255,255,255,.3)}
 .tab.on{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
 /* 时间轴 */
 .timeline{position:relative;padding-left:26px}
 .timeline:before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--line)}
 .tl-item{position:relative;padding-bottom:22px}
 .tl-item:last-child{padding-bottom:0}
-.tl-dot{position:absolute;left:-26px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--primary)}
+.tl-dot{position:absolute;left:-26px;top:3px;width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.8);border:3px solid var(--primary)}
 .tl-dot.done{background:var(--primary)}
 .tl-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .tl-head b{font-size:14px}
 .tl-date{color:var(--sub);font-size:12.5px}
-.tl-note{margin-top:6px;color:#374151;font-size:13px;line-height:1.7;background:#fafbfc;border:1px solid var(--line);border-radius:8px;padding:10px 12px;white-space:pre-wrap;word-break:break-word}
+.tl-note{margin-top:6px;color:#4a4d5e;font-size:13px;line-height:1.7;background:rgba(255,255,255,0.3);border:1px solid var(--line);border-radius:12px;padding:10px 12px;white-space:pre-wrap;word-break:break-word}
 /* 上传 */
-.upzone{border:2px dashed #cbd5e1;border-radius:12px;padding:30px;text-align:center;color:var(--sub);cursor:pointer;transition:.15s;background:#fbfcfe}
-.upzone:hover,.upzone.drag{border-color:var(--primary);background:#eff6ff;color:var(--primary)}
+.upzone{border:2px dashed rgba(120,123,140,.3);border-radius:18px;padding:30px;text-align:center;color:var(--sub);cursor:pointer;transition:.18s;background:rgba(255,255,255,0.18)}
+.upzone:hover,.upzone.drag{border-color:var(--primary);background:rgba(255,255,255,.4);color:var(--primary)}
 .upzone .big{font-size:26px;margin-bottom:8px}
-.file-chip{display:inline-flex;align-items:center;gap:6px;background:#f1f5f9;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px;margin:4px 6px 0 0}
+.file-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.4);border:1px solid var(--line);border-radius:12px;padding:6px 10px;font-size:12.5px;margin:4px 6px 0 0}
 .file-chip b{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* 弹窗 */
-.modal-mask{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;z-index:100}
-.modal{background:#fff;border-radius:14px;width:560px;max-width:94vw;max-height:88vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
+.modal-mask{position:fixed;inset:0;background:rgba(51,54,68,.32);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal{background:rgba(255,255,255,0.78);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border:1px solid var(--glass-line);border-radius:24px;width:560px;max-width:94vw;max-height:88vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
 .modal-hd{padding:16px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center}
 .modal-hd h3{font-size:16px}
-.modal-hd .x{margin-left:auto;cursor:pointer;color:var(--sub);font-size:20px;line-height:1;padding:2px 6px;border-radius:6px}
-.modal-hd .x:hover{background:var(--soft);color:var(--text)}
+.modal-hd .x{margin-left:auto;cursor:pointer;color:var(--sub);font-size:20px;line-height:1;padding:2px 8px;border-radius:10px}
+.modal-hd .x:hover{background:rgba(255,255,255,.6);color:var(--text)}
 .modal-bd{padding:20px 22px;overflow-y:auto}
 .modal-ft{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
 .frm-row{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
 .frm-row .field.full{grid-column:1/-1}
-/* 模块卡片（法律费用） */
+/* 模块卡片（费用 / 商办枢纽） */
 .fee-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
-.fee-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:28px;cursor:pointer;transition:.2s;box-shadow:var(--shadow)}
-.fee-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:#c7d7fe}
-.fee-card .fi{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:14px}
+.fee-card{background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--glass-line);border-radius:var(--radius);padding:28px;cursor:pointer;transition:.2s;box-shadow:var(--shadow)}
+.fee-card:hover{transform:translateY(-4px);background:var(--glass-hi);box-shadow:var(--shadow-lg);border-color:rgba(255,255,255,.85)}
+.fee-card .fi{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:14px;background:rgba(255,255,255,.5)}
 .fee-card h3{font-size:16px;margin-bottom:8px}
 .fee-card p{color:var(--sub);font-size:13px;line-height:1.7}
 .fee-card .amt{margin-top:14px;font-size:22px;font-weight:700}
 /* 搜索 */
-.search{padding:8px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;width:240px}
-.search:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.search{padding:9px 14px;border:1px solid var(--glass-line);border-radius:14px;font-size:13px;width:240px;background:rgba(255,255,255,.45);color:var(--text);font-family:inherit;transition:.18s}
+.search:focus{outline:none;border-color:rgba(106,111,214,.6);box-shadow:0 0 0 4px rgba(106,111,214,.12);background:rgba(255,255,255,.7)}
 /* toast */
-#toast{position:fixed;top:76px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 22px;border-radius:8px;font-size:13px;z-index:200;opacity:0;transition:.25s;pointer-events:none}
+#toast{position:fixed;top:76px;left:50%;transform:translateX(-50%);background:rgba(51,54,68,.92);backdrop-filter:blur(8px);color:#fff;padding:10px 22px;border-radius:14px;font-size:13px;z-index:300;opacity:0;transition:.25s;pointer-events:none}
 #toast.show{opacity:1}
 .mod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 @media(max-width:1100px){.mod-grid{grid-template-columns:repeat(2,1fr)}}
-.mod-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:var(--shadow)}
+.mod-card{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--glass-line);border-radius:18px;padding:18px;box-shadow:var(--shadow);transition:.18s}
+.mod-card:hover{background:var(--glass-hi)}
 .mod-card h4{font-size:14px;margin:0;display:flex;align-items:center;gap:8px}
-.notice-bar{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:10px;padding:10px 16px;font-size:13px;margin-bottom:16px;display:flex;gap:10px;align-items:center}
+.notice-bar{background:rgba(255,247,230,.6);border:1px solid rgba(230,200,140,.5);color:#8a6216;border-radius:14px;padding:10px 16px;font-size:13px;margin-bottom:16px;display:flex;gap:10px;align-items:center}
+
+/* ================= 工作台三栏玻璃布局 ================= */
+.glass-shell{display:grid;grid-template-columns:236px minmax(0,1fr) 316px;gap:22px;padding:22px;min-height:100vh;align-items:start}
+.glass-panel{background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--glass-line);border-radius:var(--radius);box-shadow:var(--shadow)}
+/* 左导航 */
+.side-nav{position:sticky;top:22px;display:flex;flex-direction:column;padding:22px 14px;min-height:calc(100vh - 44px)}
+.nav-logo{display:flex;align-items:center;gap:10px;padding:2px 10px 20px}
+.nav-logo .lg{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#8a8de6,#6a6fd6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex:none}
+.nav-logo b{font-size:15px;letter-spacing:.5px}
+.nav-logo small{display:block;font-size:10.5px;color:var(--sub);letter-spacing:.4px;margin-top:1px}
+.nav-item{display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:14px;cursor:pointer;color:var(--sub);font-size:13.5px;transition:.16s;margin-bottom:4px;border:1px solid transparent}
+.nav-item svg{flex:none;opacity:.85}
+.nav-item:hover{background:rgba(255,255,255,.4);color:var(--text)}
+.nav-item.on{background:rgba(255,255,255,.58);color:var(--primary-d);font-weight:600;border-color:rgba(255,255,255,.7);box-shadow:0 2px 10px rgba(90,95,140,.06)}
+.nav-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.nav-foot .who{flex:1;font-size:12px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 中栏 */
+.main-col{display:flex;flex-direction:column;gap:20px;min-width:0}
+.wl{padding:26px 30px}
+.wl h1{font-size:23px;font-weight:700;letter-spacing:.5px}
+.wl p{color:var(--sub);font-size:13px;margin-top:8px}
+.qcircles{display:flex;gap:22px;flex-wrap:wrap;padding:4px 6px}
+.qbtn{display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer;background:none;border:none;font-family:inherit}
+.qbtn .cir{width:74px;height:74px;border-radius:50%;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--glass-line);box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.6);
+  display:flex;align-items:center;justify-content:center;transition:.2s;color:var(--primary)}
+.qbtn:hover .cir{background:var(--glass-hi);transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.qbtn span{font-size:12.5px;color:var(--sub)}
+.qbtn:hover span{color:var(--text)}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.stat-card{padding:20px 22px;cursor:pointer;transition:.2s;display:flex;flex-direction:column;gap:8px}
+.stat-card:hover{background:var(--glass-hi);transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.stat-card .t{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:600}
+.stat-card .t svg{color:var(--primary)}
+.stat-card .cnt{font-size:12.5px;color:var(--sub)}
+.stat-card.dev{cursor:default}
+.stat-card.dev:hover{transform:none;box-shadow:var(--shadow)}
+/* 右栏 */
+.right-col{position:sticky;top:22px;display:flex;flex-direction:column;gap:18px;min-width:0}
+.rp{padding:18px}
+.rp h4{font-size:13.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px;color:var(--text)}
+.rp h4 svg{color:var(--primary)}
+.gsearch{position:relative}
+.gsearch input{width:100%;padding:11px 14px 11px 38px;border-radius:14px;border:1px solid var(--glass-line);background:rgba(255,255,255,.45);font-size:13px;font-family:inherit;color:var(--text);transition:.18s}
+.gsearch input:focus{outline:none;border-color:rgba(106,111,214,.6);box-shadow:0 0 0 4px rgba(106,111,214,.12);background:rgba(255,255,255,.7)}
+.gsearch>svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--sub);pointer-events:none}
+.gs-drop{position:absolute;top:calc(100% + 8px);left:0;right:0;background:rgba(255,255,255,.9);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--glass-line);border-radius:16px;box-shadow:var(--shadow-lg);z-index:60;overflow:hidden;max-height:320px;overflow-y:auto}
+.gs-item{display:flex;align-items:center;gap:9px;padding:10px 14px;cursor:pointer;font-size:13px}
+.gs-item:hover{background:rgba(106,111,214,.08)}
+.gs-item .tag{flex:none}
+.gs-none{padding:16px;text-align:center;color:var(--sub);font-size:12.5px}
+.grid9{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.g9{display:flex;flex-direction:column;align-items:center;gap:7px;padding:13px 4px;border-radius:16px;border:1px solid transparent;
+  background:rgba(255,255,255,.24);cursor:pointer;transition:.16s;color:var(--sub);font-size:12px;font-family:inherit}
+.g9 svg{color:var(--primary);opacity:.9}
+.g9:hover{background:rgba(255,255,255,.55);border-color:rgba(255,255,255,.75);color:var(--text);transform:translateY(-1px)}
+.msg-list{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto}
+.msg-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.28);border:1px solid rgba(255,255,255,.4);cursor:pointer;transition:.15s;font-size:12.5px}
+.msg-item:hover{background:rgba(255,255,255,.55)}
+.msg-item .d{flex:none;font-size:11px;color:var(--sub);font-variant-numeric:tabular-nums}
+.msg-item .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg-item.od .d{color:var(--red);font-weight:600}
+.msg-none{text-align:center;color:var(--sub);font-size:12.5px;padding:18px 0}
+@media(max-width:1280px){.glass-shell{grid-template-columns:210px minmax(0,1fr)}.right-col{grid-column:1/-1;position:static}}
+@media(max-width:820px){
+  .glass-shell{grid-template-columns:1fr;padding:14px;gap:14px}
+  .side-nav{position:static;min-height:0;padding:14px;flex-direction:row;align-items:center;flex-wrap:wrap;gap:6px}
+  .nav-logo{padding:0 8px 0 2px}
+  .nav-item{margin-bottom:0;padding:9px 12px}
+  .nav-item em{display:none}
+  .nav-foot{margin:0 0 0 auto;padding:0;border:none}
+  .nav-foot .who{display:none}
+  .stat-grid{grid-template-columns:1fr}
+}
 
 /* ---------- 待办事项 ---------- */
-.todo-fab{position:fixed;right:22px;bottom:26px;width:56px;height:56px;border-radius:50%;background:var(--primary);color:#fff;font-size:24px;border:none;cursor:pointer;box-shadow:0 6px 18px rgba(37,99,235,.4);z-index:150;display:flex;align-items:center;justify-content:center}
-.todo-fab:hover{background:var(--primary-d)}
+.todo-fab{position:fixed;right:22px;bottom:26px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#7c80e0,#686cd2);color:#fff;font-size:24px;border:1px solid rgba(255,255,255,.4);cursor:pointer;box-shadow:0 8px 22px rgba(106,111,214,.4);z-index:150;display:flex;align-items:center;justify-content:center;transition:.18s}
+.todo-fab:hover{transform:scale(1.06)}
 .todo-fab .badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:11px;min-width:20px;height:20px;border-radius:999px;display:none;align-items:center;justify-content:center;padding:0 5px}
-.todo-mask{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:200;display:flex;align-items:center;justify-content:center}
-.todo-modal{width:75vw;height:75vh;max-width:1240px;max-height:780px;min-width:320px;min-height:420px;background:#fff;border-radius:16px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;overflow:hidden}
+.todo-mask{position:fixed;inset:0;background:rgba(51,54,68,.32);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center}
+.todo-modal{width:88vw;height:87vh;max-width:1400px;max-height:940px;min-width:320px;min-height:420px;background:rgba(248,248,252,.9);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--glass-line);border-radius:24px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;overflow:hidden}
 .todo-hd{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex:none}
 .todo-hd h3{font-size:16px}
 .todo-hd .spacer{flex:1}
-.todo-x{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:16px;color:var(--sub)}
-.todo-x:hover{border-color:var(--red);color:var(--red)}
-.todo-board{flex:1;display:flex;gap:14px;padding:14px;overflow:auto;background:#f7f8fa}
-.todo-col{flex:1;min-width:230px;display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.todo-col-hd{padding:10px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);flex:none}
-.todo-col-hd .dot{width:8px;height:8px;border-radius:50%}
-.todo-col-hd b{font-size:13.5px}
-.todo-col-hd .n{font-size:12px;color:var(--sub);background:var(--soft);border-radius:999px;padding:1px 8px}
-.todo-col-hd .spacer{flex:1}
-.todo-add{width:26px;height:26px;border-radius:6px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--primary);font-size:16px;line-height:1}
-.todo-add:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
-.todo-clear{border:none;background:none;color:var(--sub);cursor:pointer;font-size:12px}
-.todo-clear:hover{color:var(--red)}
-.todo-form{display:none;padding:10px;border-bottom:1px dashed var(--line);gap:6px;flex-direction:column}
-.todo-form.open{display:flex}
-.todo-form input[type=text]{padding:7px 9px;border:1px solid var(--line);border-radius:7px;font-size:13px;font-family:inherit}
-.todo-form-row{display:flex;gap:6px;align-items:center}
-.todo-form input[type=date]{flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:7px;font-size:12.5px;font-family:inherit}
-.todo-list{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
-.todo-item{display:flex;align-items:flex-start;gap:8px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 10px}
-.todo-check{width:18px;height:18px;border-radius:50%;border:2px solid #cbd5e1;background:#fff;cursor:pointer;flex:none;margin-top:1px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
+.todo-x{width:32px;height:32px;border-radius:12px;border:1px solid var(--glass-line);background:rgba(255,255,255,.5);cursor:pointer;font-size:16px;color:var(--sub)}
+.todo-x:hover{border-color:rgba(207,91,91,.5);color:var(--red)}
+.todo-board{flex:1;overflow:auto}
+/* 日历看板 */
+.td-wrap{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:16px;align-items:start}
+.td-wrap.in-modal{padding:14px}
+.td-panel{background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--glass-line);border-radius:18px;overflow:hidden;box-shadow:var(--shadow)}
+.td-panel-hd{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.td-panel-hd .spacer{flex:1}
+.cal-nav{display:flex;align-items:center;gap:8px}
+.cal-nav .month{font-size:15px;font-weight:600;min-width:118px;text-align:center;font-variant-numeric:tabular-nums}
+.nav-btn{width:30px;height:30px;border-radius:10px;border:1px solid var(--glass-line);background:rgba(255,255,255,.45);cursor:pointer;color:var(--sub);font-size:15px;display:flex;align-items:center;justify-content:center;transition:.15s}
+.nav-btn:hover{background:rgba(255,255,255,.7);color:var(--primary)}
+.nav-btn:active{transform:scale(.94)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.cal-wd{padding:9px 4px;text-align:center;font-size:12px;color:var(--sub);font-weight:600;border-bottom:1px solid var(--line);background:rgba(255,255,255,.24)}
+.cal-cell{min-height:86px;border-bottom:1px solid rgba(120,123,140,.09);border-right:1px solid rgba(120,123,140,.09);padding:6px 7px;cursor:pointer;position:relative;transition:background .15s;display:flex;flex-direction:column;gap:4px}
+.cal-cell:nth-child(7n){border-right:none}
+.cal-cell:hover{background:rgba(255,255,255,.34)}
+.cal-cell.dim{background:rgba(255,255,255,.14)}
+.cal-cell.dim .d-num{color:#b6bacb}
+.d-num{font-size:13px;font-weight:500;width:25px;height:25px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-variant-numeric:tabular-nums}
+.cal-cell.today .d-num{background:var(--primary);color:#fff;font-weight:700}
+.cal-cell.sel{background:rgba(106,111,214,.13);box-shadow:inset 0 0 0 2px var(--primary)}
+.cal-cell.sel .d-num{color:var(--primary)}
+.cal-cell.today.sel .d-num{background:var(--primary);color:#fff}
+.d-marks{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:auto}
+.mk{display:inline-flex;align-items:center;gap:2px;font-size:10.5px;font-weight:600;padding:2.5px 7px;border-radius:999px;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mk-urg{background:rgba(207,91,91,.12);color:#b04444;border:1px solid rgba(207,91,91,.25)}
+.mk-nor{background:rgba(106,111,214,.12);color:#5054b8;border:1px solid rgba(106,111,214,.25)}
+.mk-ok{background:rgba(61,157,110,.12);color:#2e7d57;border:1px solid rgba(61,157,110,.25)}
+.d-today-tag{position:absolute;top:6px;right:7px;font-size:10px;color:var(--primary);font-weight:600}
+.day-head{padding:14px 16px 12px;border-bottom:1px solid var(--line)}
+.day-date{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.day-date .today-chip{font-size:11px;font-weight:600;background:rgba(106,111,214,.13);color:#5054b8;padding:2px 9px;border-radius:999px}
+.day-sub{margin-top:4px;font-size:12.5px;color:var(--sub)}
+.add-form{display:flex;gap:8px;padding:12px 16px;border-bottom:1px dashed var(--line);background:rgba(255,255,255,.2);flex-wrap:wrap}
+.add-form input[type=text]{flex:1;min-width:150px;padding:8px 12px;border:1px solid var(--glass-line);border-radius:12px;font-size:13.5px;font-family:inherit;background:rgba(255,255,255,.5);transition:.15s;color:var(--text)}
+.add-form input[type=text]:focus{outline:none;border-color:rgba(106,111,214,.6);box-shadow:0 0 0 4px rgba(106,111,214,.12)}
+.add-form select{padding:8px 10px;border:1px solid var(--glass-line);border-radius:12px;font-size:13px;font-family:inherit;background:rgba(255,255,255,.5);cursor:pointer;color:var(--text)}
+.add-form select:focus{outline:none;border-color:rgba(106,111,214,.6)}
+.list-sec{padding:10px 16px 14px}
+.list-sec + .list-sec{border-top:1px dashed var(--line)}
+.list-hd{display:flex;align-items:center;gap:8px;padding:4px 0 8px}
+.list-hd .dot{width:8px;height:8px;border-radius:50%}
+.list-hd b{font-size:13.5px}
+.list-hd .n{font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 9px;font-variant-numeric:tabular-nums}
+.n-blue{background:rgba(106,111,214,.13);color:#5054b8}
+.n-green{background:rgba(61,157,110,.13);color:#2e7d57}
+.list-hd .spacer{flex:1}
+.mini-link{border:none;background:none;color:var(--sub);cursor:pointer;font-size:12px;padding:2px 4px;border-radius:5px}
+.mini-link:hover{color:var(--red)}
+.todo-item{display:flex;align-items:flex-start;gap:9px;background:rgba(255,255,255,.42);border:1px solid var(--glass-line);border-radius:14px;padding:9px 11px;margin-bottom:8px;transition:.15s}
+.todo-item:hover{background:rgba(255,255,255,.6)}
+.todo-item.done{background:rgba(61,157,110,.1);border-color:rgba(61,157,110,.25)}
+.todo-item.done:hover{background:rgba(61,157,110,.16)}
+.todo-check{width:19px;height:19px;border-radius:50%;border:2px solid #b9bdce;background:rgba(255,255,255,.6);cursor:pointer;flex:none;margin-top:1px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;transition:.15s;position:relative;padding:0}
+.todo-check::after{content:"";position:absolute;inset:-11px;border-radius:50%}
+.todo-check:hover{border-color:var(--green)}
+.todo-check:active{transform:scale(1.18)}
 .todo-item.done .todo-check{background:var(--green);border-color:var(--green)}
 .todo-body{flex:1;min-width:0}
-.todo-title{font-size:13.5px;word-break:break-all}
-.todo-item.done .todo-title{text-decoration:line-through;color:var(--sub)}
-.todo-ddl{display:inline-flex;align-items:center;gap:4px;margin-top:4px;font-size:11.5px;padding:1px 7px;border-radius:999px}
-.ddl-red{background:#fef2f2;color:#b91c1c}
-.ddl-orange{background:#fff7ed;color:#c2410c}
-.ddl-gray{background:var(--soft);color:var(--sub)}
-.todo-del{border:none;background:none;color:#cbd5e1;cursor:pointer;font-size:14px;flex:none}
-.todo-del:hover{color:var(--red)}
-.todo-empty{padding:18px;text-align:center;color:#cbd5e1;font-size:12.5px}
+.todo-title{font-size:13.5px;word-break:break-all;line-height:1.55}
+.todo-item.done .todo-title{text-decoration:line-through;color:#7ba78e}
+.todo-meta{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap}
+.todo-item.done .todo-meta{opacity:.75}
+.todo-empty{padding:20px 12px;text-align:center;color:#b6bacb;font-size:12.5px;line-height:1.8}
+.edit-row{display:flex;gap:6px;flex:1;min-width:0}
+.edit-row input{flex:1;min-width:0;padding:6px 10px;border:1px solid var(--primary);border-radius:10px;font-size:13px;font-family:inherit;background:rgba(255,255,255,.7)}
+.edit-row input:focus{outline:none;box-shadow:0 0 0 4px rgba(106,111,214,.13)}
+.todo-icon-btn{border:none;background:none;color:#b9bdce;cursor:pointer;font-size:14px;flex:none;padding:2px 5px;border-radius:8px;line-height:1;transition:.15s}
+.todo-icon-btn:hover{color:var(--primary);background:rgba(255,255,255,.6)}
+.todo-icon-btn.del:hover{color:var(--red)}
+.todo-item.done .todo-icon-btn{color:#a8cdb6}
+.todo-item.done .todo-icon-btn:hover{color:var(--primary);background:rgba(255,255,255,.55)}
+.todo-item.done .todo-icon-btn.del:hover{color:var(--red)}
+@media(max-width:900px){.td-wrap{grid-template-columns:1fr}}
+@media(max-width:640px){.cal-cell{min-height:54px;padding:4px}.d-num{width:23px;height:23px;font-size:12px}.mk{font-size:9.5px;padding:2px 5px}.d-today-tag{display:none}}
+
+/* ---------- 扩展：通用省略 / 仿宋 / 备忘录便签 / 九宫格折叠 / 只读角色 ---------- */
+.ellipsis{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0}
+#view-biz input,#view-biz textarea,#view-biz .txt,.fs-font input,.fs-font textarea{font-family:FangSong,STFangsong,"仿宋",serif!important;font-size:15px}
+.memo-tab.on{background:rgba(255,255,255,.62);border-color:rgba(255,255,255,.8);color:var(--primary-d);font-weight:600}
+.memo-pad-ta{width:100%;min-height:380px;border:1px solid var(--glass-line);border-radius:16px;background:rgba(255,255,255,.45);padding:16px;font-size:14.5px;line-height:1.9;font-family:inherit;color:var(--text);resize:vertical}
+.memo-pad-ta:focus{outline:none;border-color:rgba(106,111,214,.6);box-shadow:0 0 0 4px rgba(106,111,214,.12);background:rgba(255,255,255,.7)}
+#g9body{max-height:0;overflow:hidden;transition:max-height .35s ease}
+#g9body.open{max-height:420px}
+.g9-head{cursor:pointer;user-select:none}
+.g9-head .sub{font-weight:400}
+.mk-case{background:rgba(207,91,91,.12);color:#b04444;border:1px solid rgba(207,91,91,.25)}
+.case-cal-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.45);margin-bottom:7px;cursor:pointer;font-size:12.5px;transition:.15s}
+.case-cal-item:hover{background:rgba(255,255,255,.6)}
+.side-nav{overflow-y:auto}
+/* 报表 */
+.rep-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px}
+.rep-card{background:rgba(255,255,255,.32);border:1px solid var(--glass-line);border-radius:18px;padding:16px 18px}
+.rep-card .k{font-size:12px;color:var(--sub)}
+.rep-card .v{font-size:21px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:12.5px}
+.bar-row .lbl{width:110px;color:var(--sub);flex:none}
+.bar-track{flex:1;height:12px;border-radius:999px;background:rgba(255,255,255,.4);overflow:hidden}
+.bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#8a8de6,#6a6fd6)}
+.bar-row .val{width:120px;text-align:right;font-variant-numeric:tabular-nums;flex:none}
+.donut-wrap{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.donut-legend{font-size:12.5px;display:flex;flex-direction:column;gap:7px}
+.donut-legend .li{display:flex;align-items:center;gap:8px}
+.donut-legend .sw{width:10px;height:10px;border-radius:3px;flex:none}
+/* 只读访客：隐藏编辑类控件 */
+body.ro .btn-primary,body.ro .btn-danger,body.ro .todo-icon-btn,body.ro .mini-link,body.ro .add-form,body.ro .upzone,body.ro #memoAddBtn,body.ro .todo-fab{display:none!important}
+body.ro .todo-check{pointer-events:none}
+.ro-badge{font-size:11px;background:rgba(201,138,45,.15);color:#a56f22;border-radius:999px;padding:2px 9px;margin-left:8px}
+@media(max-width:1280px){.rep-cards{grid-template-columns:repeat(3,1fr)}.ck-grid{grid-template-columns:1fr!important}}
+@media(max-width:820px){.rep-cards{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -209,64 +372,81 @@ table.tbl tbody tr:hover{background:#f8faff}
 
 <!-- ================= 工作台 ================= -->
 <div id="view-dash" class="view hidden">
-  <div class="topbar">
-    <span style="font-size:18px;font-weight:700;color:var(--primary)">⚖️ 法务管理系统</span>
-    <span class="spacer"></span>
-    <button class="btn btn-sm" onclick="exportData()">⬇ 导出数据</button>
-    <button class="btn btn-sm" onclick="document.getElementById('importFile').click()">⬆ 导入数据</button>
-    <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
-    <span class="who" id="whoName"></span>
-    <button class="btn btn-sm" onclick="doLogout()">退出登录</button>
-  </div>
-  <div class="dash-wrap">
-    <div class="dash-head">
-      <div><h2>子系统工作台</h2><div class="sub" style="font-size:13px;margin-top:4px">请选择要进入的业务子系统</div></div>
-    </div>
-    <div class="dash-grid">
-      <div class="dash-card" onclick="go('todo')">
-        <div class="dash-icon" style="background:#fff1f2">📋</div>
-        <h3>待办事项</h3>
-        <p>今日待办、紧急事项、一般待办<br>支持 DDL 截止时间提醒</p>
-        <span class="cnt" id="cnt-todo"></span>
+  <div class="glass-shell">
+    <!-- 左侧导航 -->
+    <aside class="side-nav glass-panel">
+      <div class="nav-logo"><div class="lg"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v16"/><path d="M8 20h8"/><path d="M5 6.5h14"/><path d="M5.5 6.5 3 12.5h5L5.5 6.5z"/><path d="M18.5 6.5 16 12.5h5l-2.5-6z"/></svg></div><div><b>法务管理系统</b><small>LEGAL WORKBENCH</small></div></div>
+      <div class="nav-item" data-v="dash" onclick="go('dash')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></svg><em style="font-style:normal">工作台</em></div>
+      <div class="nav-item" data-v="todo" onclick="go('todo')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="3.5"/><path d="M3.5 10h17"/><path d="M8 3v4M16 3v4"/><circle cx="8.5" cy="14.5" r="0.8" fill="currentColor"/><circle cx="12" cy="14.5" r="0.8" fill="currentColor"/><circle cx="15.5" cy="14.5" r="0.8" fill="currentColor"/></svg><em style="font-style:normal">待办事项</em></div>
+      <div class="nav-item" data-v="memo" onclick="go('memo')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5h14v15H5z"/><path d="M8.5 9.5h7M8.5 13h4.5"/></svg><em style="font-style:normal">备忘录</em></div>
+      <div class="nav-item" data-v="biz" onclick="go('biz')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7.5" width="17" height="12.5" rx="3"/><path d="M9 7.5V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1.5"/><path d="M3.5 12.5h17"/></svg><em style="font-style:normal">商办法律分析</em></div>
+      <div class="nav-item" data-v="fee" onclick="go('fee')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13.5" rx="3.5"/><path d="M3 10.2h18"/><circle cx="16.6" cy="14.8" r="1.1" fill="currentColor" stroke="none"/></svg><em style="font-style:normal">法律费用管理</em></div>
+      <div class="nav-item" data-v="fuping" onclick="go('fuping')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 21V6a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 14.5 6v15"/><path d="M14.5 9.5h3.5A1.5 1.5 0 0 1 19.5 11v10"/><path d="M2.5 21h19"/><path d="M8 8.5h1.6M8 12h1.6M8 15.5h1.6M11.5 8.5h1M11.5 12h1"/></svg><em style="font-style:normal">富平99项目相关</em></div>
+      <div class="nav-item" onclick="toast('功能开发中，如有需求请联系管理员')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2.2"/><rect x="13" y="4" width="7" height="7" rx="2.2"/><rect x="4" y="13" width="7" height="7" rx="2.2"/><rect x="13" y="13" width="7" height="7" rx="2.2"/></svg><em style="font-style:normal">开发中</em></div>
+      <div class="nav-item" data-v="consult" onclick="go('consult')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5a2.5 2.5 0 0 1 2.5-2.5h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg><em style="font-style:normal">法律咨询</em></div>
+      <div class="nav-item" data-v="docs" onclick="go('docs')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 11h6M9 15h6"/></svg><em style="font-style:normal">文书库</em></div>
+      <div class="nav-item" data-v="report" onclick="go('report')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 16v-5M12 16V8M16 16v-3"/></svg><em style="font-style:normal">数据报表</em></div>
+      <div class="nav-item" id="navRoleBtn" onclick="openRoleModal()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2" fill="currentColor" stroke="none"/></svg><em style="font-style:normal">权限管理</em></div>
+<div class="nav-foot">
+        <span class="who" id="whoName"></span>
+        <button class="btn btn-sm" onclick="doLogout()" title="退出登录" style="padding:6px 10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h5.5v16H14"/><path d="M3.5 12h10"/><path d="M10 8.5 6 12l4 4"/></svg></button>
       </div>
+    </aside>
 
-      <div class="dash-card" onclick="go('lit')">
-        <div class="dash-icon di-blue">📁</div>
-        <h3>诉讼管理</h3>
-        <p>案件总览、案件详情、案件进程<br>案件费用、案件材料、相关安排</p>
-        <span class="cnt" id="cnt-lit"></span>
+    <!-- 中间主区域 -->
+    <main class="main-col">
+      <div class="wl glass-panel">
+        <h1 id="wl-title">欢迎使用法务管理系统</h1>
+        <p id="wl-date"></p>
       </div>
-      <div class="dash-card" onclick="go('biz')">
-        <div class="dash-icon di-indigo">🏢</div>
-        <h3>商办法律分析</h3>
-        <p>客户基本情况、现存问题、问题分析<br>诉前准备初步判断、相关材料</p>
-        <span class="cnt" id="cnt-biz"></span>
+      <div class="glass-panel" style="padding:20px 22px" id="dashCockpit"></div>
+      <div class="qcircles">
+        <button class="qbtn" onclick="go('todo')"><span class="cir"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="3.5"/><path d="M3.5 10h17"/><path d="M8 3v4M16 3v4"/><circle cx="8.5" cy="14.5" r="0.8" fill="currentColor"/><circle cx="12" cy="14.5" r="0.8" fill="currentColor"/><circle cx="15.5" cy="14.5" r="0.8" fill="currentColor"/></svg></span><span>待办事项</span></button>
+        <button class="qbtn" onclick="go('memo')"><span class="cir"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5h14v15H5z"/><path d="M8.5 9.5h7M8.5 13h4.5"/></svg></span><span>备忘录</span></button>
+        <button class="qbtn" onclick="go('biz')"><span class="cir"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7.5" width="17" height="12.5" rx="3"/><path d="M9 7.5V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1.5"/><path d="M3.5 12.5h17"/></svg></span><span>商办法律分析</span></button>
+        <button class="qbtn" onclick="go('fee')"><span class="cir"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13.5" rx="3.5"/><path d="M3 10.2h18"/><circle cx="16.6" cy="14.8" r="1.1" fill="currentColor" stroke="none"/></svg></span><span>法律费用</span></button>
+        <button class="qbtn" onclick="go('fuping')"><span class="cir"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 21V6a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 14.5 6v15"/><path d="M14.5 9.5h3.5A1.5 1.5 0 0 1 19.5 11v10"/><path d="M2.5 21h19"/><path d="M8 8.5h1.6M8 12h1.6M8 15.5h1.6M11.5 8.5h1M11.5 12h1"/></svg></span><span>富平99项目</span></button>
+        <button class="qbtn" onclick="toast('功能开发中，如有需求请联系管理员')"><span class="cir"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2.2"/><rect x="13" y="4" width="7" height="7" rx="2.2"/><rect x="4" y="13" width="7" height="7" rx="2.2"/><rect x="13" y="13" width="7" height="7" rx="2.2"/></svg></span><span>开发中</span></button>
       </div>
-      <div class="dash-card" onclick="go('fee')">
-        <div class="dash-icon di-teal">💰</div>
-        <h3>法律费用管理</h3>
-        <p>常法/坐班服务、常务/专项服务费<br>案件相关费用，支持批量导入</p>
-        <span class="cnt" id="cnt-fee"></span>
+      <div class="stat-grid">
+        <div class="stat-card glass-panel" onclick="go('todo')"><div class="t"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="3.5"/><path d="M3.5 10h17"/><path d="M8 3v4M16 3v4"/><circle cx="8.5" cy="14.5" r="0.8" fill="currentColor"/><circle cx="12" cy="14.5" r="0.8" fill="currentColor"/><circle cx="15.5" cy="14.5" r="0.8" fill="currentColor"/></svg>待办事项</div><div class="sub" style="font-size:12.5px;line-height:1.7">日历看板 · 按日管理待办与已完成</div><div class="cnt" id="cnt-todo"></div></div>
+        <div class="stat-card glass-panel" onclick="go('memo')"><div class="t"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5h14v15H5z"/><path d="M8.5 9.5h7M8.5 13h4.5"/></svg>备忘录</div><div class="sub" style="font-size:12.5px;line-height:1.7">自定义「致谁」分组记录备忘事项</div><div class="cnt" id="cnt-memo"></div></div>
+        <div class="stat-card glass-panel" onclick="go('biz')"><div class="t"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7.5" width="17" height="12.5" rx="3"/><path d="M9 7.5V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1.5"/><path d="M3.5 12.5h17"/></svg>商办法律分析</div><div class="sub" style="font-size:12.5px;line-height:1.7">尚未进入诉讼 / 诉讼管理 · 一键迁移</div><div class="cnt" id="cnt-biz"></div></div>
+        <div class="stat-card glass-panel" onclick="go('fee')"><div class="t"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13.5" rx="3.5"/><path d="M3 10.2h18"/><circle cx="16.6" cy="14.8" r="1.1" fill="currentColor" stroke="none"/></svg>法律费用管理</div><div class="sub" style="font-size:12.5px;line-height:1.7">常法坐班 / 常务专项 / 案件相关费用</div><div class="cnt" id="cnt-fee"></div></div>
+        <div class="stat-card glass-panel" onclick="go('fuping')"><div class="t"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 21V6a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 14.5 6v15"/><path d="M14.5 9.5h3.5A1.5 1.5 0 0 1 19.5 11v10"/><path d="M2.5 21h19"/><path d="M8 8.5h1.6M8 12h1.6M8 15.5h1.6M11.5 8.5h1M11.5 12h1"/></svg>富平99项目相关</div><div class="sub" style="font-size:12.5px;line-height:1.7">2769 / 2779 号地块 · 记录与文件</div><div class="cnt" id="cnt-fuping"></div></div>
+        <div class="stat-card glass-panel" onclick="go('consult')"><div class="t"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5a2.5 2.5 0 0 1 2.5-2.5h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>法律咨询工单</div><div class="sub" style="font-size:12.5px;line-height:1.7">业务部门咨询答复 · FAQ 知识库</div><div class="cnt" id="cnt-consult"></div></div>
+        <div class="stat-card glass-panel" onclick="go('docs')"><div class="t"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 11h6M9 15h6"/></svg>文书库</div><div class="sub" style="font-size:12.5px;line-height:1.7">上传文书文件 · 名称与上传时间可编辑</div><div class="cnt" id="cnt-docs"></div></div>
+        <div class="stat-card glass-panel" onclick="go('report')"><div class="t"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 16v-5M12 16V8M16 16v-3"/></svg>数据报表</div><div class="sub" style="font-size:12.5px;line-height:1.7">法务驾驶舱 · 风险分布 · 年度报告</div><div class="cnt" id="cnt-report">查看图表 →</div></div>
+<div class="stat-card glass-panel dev"><div class="t"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2.2"/><rect x="13" y="4" width="7" height="7" rx="2.2"/><rect x="4" y="13" width="7" height="7" rx="2.2"/><rect x="13" y="13" width="7" height="7" rx="2.2"/></svg>开发中</div><div class="sub" style="font-size:12.5px;line-height:1.7">如有需求请告知系统管理员进行新增</div><div class="cnt">敬请期待</div></div>
       </div>
-      <div class="dash-card" onclick="go('fuping')">
-        <div class="dash-icon" style="background:#fff7ed">🏗️</div>
-        <h3>富平99项目相关</h3>
-        <p>2769号地块 / 2779号地块<br>土地性质 · 建筑性质 · 项目记录</p>
-        <span class="cnt" id="cnt-fuping"></span>
+    </main>
+
+    <!-- 右侧面板 -->
+    <aside class="right-col">
+      <div class="rp glass-panel">
+        <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M20.5 20.5 16 16"/></svg>全局搜索</h4>
+        <div class="gsearch">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M20.5 20.5 16 16"/></svg>
+          <input id="gsInput" placeholder="搜索案件 / 客户 / 待办 / 备忘…" oninput="dashSearch(this.value)" autocomplete="off">
+          <div class="gs-drop hidden" id="gsDrop"></div>
+        </div>
       </div>
-      <div class="dash-card" onclick="go('seal')">
-        <div class="dash-icon" style="background:#fef3c7">🔖</div>
-        <h3>印章、档案管理</h3>
-        <p>印章台账：性质 · 持有人 · 使用频率<br>支持批量导入 Excel</p>
-        <span class="cnt" id="cnt-seal2"></span>
+      <div class="rp glass-panel">
+        <h4 class="g9-head" onclick="document.getElementById('g9body').classList.toggle('open')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2.2"/><rect x="13" y="4" width="7" height="7" rx="2.2"/><rect x="4" y="13" width="7" height="7" rx="2.2"/><rect x="13" y="13" width="7" height="7" rx="2.2"/></svg>功能导航<span class="spacer"></span><span class="sub" style="font-size:12px">点击展开 / 收起</span></h4>
+        <div class="grid9" id="g9body">
+          <button class="g9" onclick="exportData()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M6.5 10.8 12 16.3l5.5-5.5"/><path d="M5 20h14"/></svg>导出数据</button>
+          <button class="g9" onclick="document.getElementById('importFile').click()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5"/><path d="M6.5 9.2 12 3.7l5.5 5.5"/><path d="M5 20h14"/></svg>导入数据</button>
+          <button class="g9" onclick="doLogout()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h5.5v16H14"/><path d="M3.5 12h10"/><path d="M10 8.5 6 12l4 4"/></svg>退出登录</button>
+          <button class="g9" onclick="doLogout()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 3.5 7.5 7 11"/><path d="M3.5 7.5H17"/><path d="M17 13l3.5 3.5L17 20"/><path d="M20.5 16.5H7"/></svg>切换账号</button>
+          <button class="g9" onclick="openSuggest()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 1 3.6 10.8c-.8.6-1.1 1.3-1.1 2.2h-5c0-.9-.3-1.6-1.1-2.2A6 6 0 0 1 12 3z"/></svg>改进建议</button>
+        </div>
+        <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
       </div>
-      <div class="dash-card dev">
-        <div class="dash-icon di-gray">🚧</div>
-        <h3>开发中</h3>
-        <p>如有需求<br>请告知系统管理员进行新增</p>
-        <span class="cnt">敬请期待</span>
+      <div class="rp glass-panel">
+        <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5a6 6 0 0 1 12 0c0 4.5 1.8 5.7 1.8 5.7H4.2S6 14 6 9.5"/><path d="M10 19a2.2 2.2 0 0 0 4 0"/></svg>消息队列</h4>
+        <div class="msg-list" id="msgList"></div>
       </div>
-    </div>
+    </aside>
   </div>
 </div>
 
@@ -274,12 +454,12 @@ table.tbl tbody tr:hover{background:#f8faff}
 <div id="view-lit" class="view hidden">
   <div class="topbar">
     <span class="link" onclick="backPrev()">← 返回上一级</span>
-    <span class="crumb">诉讼管理</span><span class="sub" id="lit-crumb2"></span>
+    <span class="crumb">商办法律分析</span><span class="sub" id="lit-crumb2"></span>
     <span class="spacer"></span>
     <button class="btn btn-sm" id="litAddBtn" onclick="openCaseModal()">＋ 新增案件</button>
   </div>
   <div class="page" id="lit-list-page">
-    <div class="page-head"><h2>案件总览</h2><input class="search" id="litSearch" placeholder="搜索案件名称 / 案号 / 当事人" oninput="renderLitList()"></div>
+    <div class="page-head"><h2>案件总览</h2><input class="search" id="litSearch" placeholder="搜索案件名称 / 案号 / 当事人" oninput="renderLitList()"><span class="spacer"></span><button class="btn btn-sm" onclick="openCaseCalModal()">案件日历</button><button class="btn btn-sm" onclick="openDeadlineCalc()">期限计算器</button><button class="btn btn-sm" onclick="openCaseStats()">复盘统计</button></div>
     <div class="panel"><div class="panel-bd" style="padding:0" id="litListWrap"></div></div>
   </div>
   <div class="page hidden" id="lit-detail-page">
@@ -302,7 +482,24 @@ table.tbl tbody tr:hover{background:#f8faff}
     <span class="spacer"></span>
     <button class="btn btn-sm" id="bizAddBtn" onclick="openClientModal()">＋ 新增客户</button>
   </div>
-  <div class="page" id="biz-list-page">
+  <div class="page" id="biz-home">
+    <div class="page-head"><h2>请选择子模块</h2></div>
+    <div class="fee-grid" style="grid-template-columns:repeat(2,1fr)">
+      <div class="fee-card" onclick="enterPrelit()">
+        <div class="fi"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6a6fd6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 21V6a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 14.5 6v15"/><path d="M14.5 9.5h3.5A1.5 1.5 0 0 1 19.5 11v10"/><path d="M2.5 21h19"/><path d="M8 8.5h1.6M8 12h1.6M8 15.5h1.6M11.5 8.5h1M11.5 12h1"/></svg></div>
+        <h3>尚未进入诉讼</h3>
+        <p>客户基本情况、现存问题、问题分析<br>诉前准备初步判断、相关材料<br><b style="color:var(--primary)">支持一键迁移到诉讼管理</b></p>
+        <div class="amt" style="font-size:16px" id="cnt-prelit"></div>
+      </div>
+      <div class="fee-card" onclick="go('lit')">
+        <div class="fi"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6a6fd6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7.5" width="17" height="12.5" rx="3"/><path d="M9 7.5V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1.5"/><path d="M3.5 12.5h17"/></svg></div>
+        <h3>诉讼管理</h3>
+        <p>案件总览、案件详情、案件进程<br>案件费用、案件材料、相关安排</p>
+        <div class="amt" style="font-size:16px" id="cnt-lit2"></div>
+      </div>
+    </div>
+  </div>
+  <div class="page hidden" id="biz-list-page">
     <div class="page-head"><h2>客户列表</h2><input class="search" id="bizSearch" placeholder="搜索客户名称" oninput="renderBizList()"></div>
     <div class="panel"><div class="panel-bd" style="padding:0" id="bizListWrap"></div></div>
   </div>
@@ -311,6 +508,7 @@ table.tbl tbody tr:hover{background:#f8faff}
       <h2 id="bizDetailName"></h2>
       <span id="bizDetailTag"></span>
       <span class="spacer"></span>
+      <button class="btn btn-sm btn-primary" onclick="migrateToLit()">⚡ 一键迁移到诉讼管理</button>
       <button class="btn btn-sm btn-danger" onclick="delClient()">删除客户</button>
     </div>
     <div class="panel"><div class="panel-hd"><h3>① 客户基本情况</h3></div>
@@ -372,48 +570,89 @@ table.tbl tbody tr:hover{background:#f8faff}
       <button class="btn btn-sm btn-danger" onclick="delFpModule()">删除模块</button>
     </div>
     <div class="panel"><div class="panel-bd" style="padding:0" id="fpRecWrap"></div></div>
+    <div class="panel"><div class="panel-hd"><h3>📎 相关文件</h3><span class="sub">上传与本模块相关的文件，随数据保存，可随时下载</span></div>
+      <div class="panel-bd" id="fpFileWrap"></div></div>
   </div>
 </div>
 
-<!-- ================= 印章、档案管理 ================= -->
-<div id="view-seal" class="view hidden">
+<!-- ================= 备忘录 ================= -->
+<div id="view-memo" class="view hidden">
   <div class="topbar">
     <span class="link" onclick="backPrev()">← 返回上一级</span>
-    <span class="crumb">印章、档案管理</span><span class="sub" id="seal-crumb2"></span>
+    <span class="crumb">备忘录</span><span class="sub" id="memo-crumb2"></span>
+    <button class="btn btn-sm memo-tab on" id="mtab-out" onclick="setMemoTab('out')">对外备忘录</button>
+    <button class="btn btn-sm memo-tab" id="mtab-in" onclick="setMemoTab('in')">对内便签</button>
+    <span class="spacer"></span>
+    <button class="btn btn-sm btn-primary" id="memoAddBtn" onclick="openMemoModal()">＋ 新增备忘录</button>
   </div>
-  <div class="page" id="seal-home">
-    <div class="page-head"><h2>请选择管理模块</h2></div>
-    <div class="fee-grid" style="grid-template-columns:repeat(2,1fr)">
-      <div class="fee-card" onclick="openSealModule('seal')">
-        <div class="fi" style="background:#fef3c7">🔖</div>
-        <h3>印章管理</h3>
-        <p>公司印章台账：印章性质、现持有人、交接时间、使用频率（按使用频率由高到低排列，支持批量导入）</p>
-        <div class="amt" style="font-size:16px" id="cnt-seal"></div>
-      </div>
-      <div class="fee-card" onclick="openSealModule('archive')">
-        <div class="fi" style="background:#f0f9ff">🗂️</div>
-        <h3>档案管理</h3>
-        <p>电子档案 / 档案室（暂未启用，结构已预留，可自定义设置）</p>
-        <div class="amt" style="font-size:16px" id="cnt-archive"></div>
-      </div>
-    </div>
+  <div class="page" id="memo-home">
+    <div class="page-head"><h2>备忘录看板</h2><span class="sub">按「致谁」自定义分组，记录需要提醒对方的事项</span></div>
+    <div class="mod-grid" id="memoList"></div>
   </div>
-  <div class="page hidden" id="seal-module">
-    <div class="page-head"><h2 id="sealModuleTitle"></h2>
+  <div class="page hidden" id="memo-pad">
+    <div class="panel"><div class="panel-hd"><h3>对内便签</h3><span class="sub">内部随手记，输入内容后点击保存即留存</span></div>
+      <div class="panel-bd">
+        <textarea id="memoPadText" class="memo-pad-ta" placeholder="在这里输入备忘内容，点击保存即可留存…"></textarea>
+        <div style="margin-top:12px;display:flex;gap:12px;align-items:center">
+          <button class="btn btn-primary" onclick="saveMemoPad()">保存</button>
+          <span class="sub" id="memoPadSaved" style="font-size:12px"></span>
+        </div>
+      </div></div>
+  </div>
+  <div class="page hidden" id="memo-detail">
+    <div class="page-head">
+      <h2 id="memoTitle"></h2>
       <span class="spacer"></span>
-      <button class="btn btn-sm hidden" id="sealImportBtn" onclick="document.getElementById('sealImportFile').click()">📥 批量导入Excel</button>
-      <button class="btn btn-sm hidden" id="sealTplBtn" onclick="downloadSealTemplate()">⬇ 下载导入模板</button>
-      <input type="file" id="sealImportFile" accept=".xlsx,.xls" class="hidden" onchange="importSeals(event)">
-      <button class="btn btn-sm btn-primary" id="sealAddBtn" onclick="openSealRecModal()">＋ 新增记录</button>
+      <button class="btn btn-sm" onclick="renameMemo()">✎ 修改致谁</button>
+      <button class="btn btn-sm btn-primary" onclick="openMemoRecModal()">＋ 新增记录</button>
+      <button class="btn btn-sm btn-danger" onclick="delMemoBoard()">删除备忘录</button>
     </div>
-    <div class="tabs" id="archiveTabs" style="display:none"></div>
-    <div class="notice-bar" id="archiveNotice" style="display:none">⚠️ 该模块暂未启用，结构已预留：现在即可新增记录，字段后续如需调整请联系系统管理员。</div>
-    <div class="panel"><div class="panel-bd" style="padding:0" id="sealTableWrap"></div></div>
-    <div class="panel" id="archiveNotePanel" style="display:none">
-      <div class="panel-hd"><h3>模块说明（可自定义设置）</h3><span class="spacer"></span><button class="btn btn-sm" onclick="editArchiveNote()">✎ 编辑说明</button></div>
-      <div class="panel-bd"><div class="info-block" style="margin-bottom:0"><div class="txt" id="archiveNote"></div></div></div>
-    </div>
+    <div class="panel"><div class="panel-bd" style="padding:0" id="memoRecWrap"></div></div>
   </div>
+</div>
+
+<!-- ================= 法律咨询工单 ================= -->
+<div id="view-consult" class="view hidden">
+  <div class="topbar">
+    <span class="link" onclick="backPrev()">← 返回上一级</span>
+    <span class="crumb">法律咨询工单</span>
+    <span class="spacer"></span>
+    <button class="btn btn-sm btn-primary" onclick="openConsultModal()">＋ 新增咨询</button>
+  </div>
+  <div class="page">
+    <div class="page-head"><h2>咨询工单</h2><span class="sub">业务部门在线提问，法务答复后可归档为 FAQ</span></div>
+    <div class="panel"><div class="panel-bd" style="padding:0" id="consultWrap"></div></div>
+    <div class="panel"><div class="panel-hd"><h3>FAQ 知识库</h3><span class="sub">已归档的常见问答</span><span class="spacer"></span><input class="search" id="faqQ" placeholder="搜索 FAQ" oninput="renderConsults()"></div>
+      <div class="panel-bd" id="faqWrap"></div></div>
+  </div>
+</div>
+
+<!-- ================= 文书库 ================= -->
+<div id="view-docs" class="view hidden">
+  <div class="topbar">
+    <span class="link" onclick="backPrev()">← 返回上一级</span>
+    <span class="crumb">文书库</span>
+  </div>
+  <div class="page">
+    <div class="page-head"><h2>文书库</h2><span class="sub">上传文书文件，文件名称与上传时间可随时编辑</span></div>
+    <div class="panel"><div class="panel-bd">
+      <div class="upzone" id="docUpzone"><div class="big">📤</div><b>点击或拖拽上传文书文件</b><div style="font-size:12px;margin-top:6px">支持 PDF、Word、Excel、图片、压缩包等格式，单文件 ≤ 3MB（内容随数据一并保存，可下载）</div></div>
+      <input type="file" id="docFileInput" multiple class="hidden">
+    </div></div>
+    <div class="panel"><div class="panel-hd"><h3>已上传文书</h3><span class="sub" id="docCount"></span></div>
+      <div class="panel-bd" style="padding:0" id="docsWrap"></div></div>
+  </div>
+</div>
+
+<!-- ================= 数据报表 ================= -->
+<div id="view-report" class="view hidden">
+  <div class="topbar">
+    <span class="link" onclick="backPrev()">← 返回上一级</span>
+    <span class="crumb">数据报表</span>
+    <span class="spacer"></span>
+    <button class="btn btn-sm btn-primary" onclick="exportAnnualReport()">⬇ 导出年度法务报告</button>
+  </div>
+  <div class="page" id="reportWrap"></div>
 </div>
 
 <div id="modalRoot"></div>
@@ -458,11 +697,19 @@ function ensureShape(){
   if(Array.isArray(DB.clients))DB.clients.forEach(c=>{if(!Array.isArray(c.materials))c.materials=[]});
   if(!DB.archives)DB.archives={electronic:{note:'',records:[]},room:{note:'',records:[]}};
   ['electronic','room'].forEach(k=>{if(!DB.archives[k])DB.archives[k]={note:'',records:[]};if(!Array.isArray(DB.archives[k].records))DB.archives[k].records=[]});
-  if(!Array.isArray(DB.todos))DB.todos=[];
+  if(!Array.isArray(DB.memos))DB.memos=[];
+  if(typeof DB.memoPad!=='string')DB.memoPad='';
+  if(!Array.isArray(DB.consults))DB.consults=[];
+  if(!DB.roles)DB.roles={};
+  if(!Array.isArray(DB.suggestions))DB.suggestions=[];
+  if(!Array.isArray(DB.docFiles))DB.docFiles=[];
+  (DB.cases||[]).forEach(c=>{if(!Array.isArray(c.execNotes))c.execNotes=[];if(!Array.isArray(c.execPays))c.execPays=[];if(c.result===undefined)c.result='';if(c.resultNote===undefined)c.resultNote=''});
+  migrateTodos();
   if(typeof DB.todoMin!=='boolean')DB.todoMin=false;
 }
 function save(){
-  localStorage.setItem(DB_KEY,JSON.stringify(DB));
+  try{localStorage.setItem(DB_KEY,JSON.stringify(DB))}catch(e){console.warn('本地存储写入失败',e)}
+  if(typeof liveRefreshDash==='function')liveRefreshDash();
   if(!cloudReady)return;
   clearTimeout(saveTimer);
   saveTimer=setTimeout(syncToCloud,800);
@@ -477,14 +724,19 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 function caseName(id){const c=DB.cases.find(x=>x.id===id);return c?c.name:'—'}
 
 /* ==================== 视图导航 ==================== */
-const VIEWS=['view-login','view-dash','view-lit','view-biz','view-fee','view-fuping','view-seal','view-todo'];
+const VIEWS=['view-login','view-dash','view-lit','view-biz','view-fee','view-fuping','view-memo','view-todo','view-consult','view-docs','view-report'];
 /* 返回上一级：详情页→列表页→工作台 */
 function backPrev(){
   if(!document.getElementById('view-lit').classList.contains('hidden')){
     if(!document.getElementById('lit-detail-page').classList.contains('hidden')){showLitList();window.scrollTo(0,0);return}
+    go('biz');window.scrollTo(0,0);return
   }
   if(!document.getElementById('view-biz').classList.contains('hidden')){
     if(!document.getElementById('biz-detail-page').classList.contains('hidden')){showBizList();window.scrollTo(0,0);return}
+    if(!document.getElementById('biz-list-page').classList.contains('hidden')){showBizHome();window.scrollTo(0,0);return}
+  }
+  if(!document.getElementById('view-memo').classList.contains('hidden')){
+    if(!document.getElementById('memo-detail').classList.contains('hidden')){showMemoHome();window.scrollTo(0,0);return}
   }
   if(!document.getElementById('view-fee').classList.contains('hidden')){
     if(feeMod){showFeeHome();window.scrollTo(0,0);return}
@@ -493,31 +745,42 @@ function backPrev(){
     if(!document.getElementById('fp-module').classList.contains('hidden')){showFpPlot(curPlot);window.scrollTo(0,0);return}
     if(!document.getElementById('fp-plot').classList.contains('hidden')){showFpHome();window.scrollTo(0,0);return}
   }
-  if(!document.getElementById('view-seal').classList.contains('hidden')){
-    if(!document.getElementById('seal-module').classList.contains('hidden')){showSealHome();window.scrollTo(0,0);return}
-  }
   go('dash');
 }
 function go(v){
   VIEWS.forEach(id=>document.getElementById(id).classList.add('hidden'));
   document.getElementById('view-'+v).classList.remove('hidden');
+  navSet(v);
   if(v==='dash')renderDash();
   if(v==='lit'){showLitList();}
-  if(v==='biz'){showBizList();}
+  if(v==='biz'){showBizHome();}
   if(v==='fee'){showFeeHome();}
   if(v==='fuping'){showFpHome();}
-  if(v==='seal'){showSealHome();}
+  if(v==='memo'){setMemoTab('out');}
   if(v==='todo'){renderTodos();}
+  if(v==='consult'){renderConsults();}
+  if(v==='docs'){renderDocs();}
+  if(v==='report'){renderReport();}
+  if(typeof applyRole==='function')applyRole();
 }
 async function doLogin(){
-  const email=val('lg-user'),pw=document.getElementById('lg-pass').value;
+  const email=val('lg-user').toLowerCase(),pw=document.getElementById('lg-pass').value;
   if(!email||!pw){toast('请输入邮箱和密码');return}
-  const {data,error}=await sb.auth.signInWithPassword({email,password:pw});
-  if(error){toast('登录失败：邮箱或密码错误');return}
+  let res;
+  try{res=await sb.auth.signInWithPassword({email,password:pw})}
+  catch(e){toast('无法连接服务器，请检查网络后重试');return}
+  const {data,error}=res;
+  if(error){
+    const m=error.message||'';
+    if(m.indexOf('Invalid login')>-1)toast('登录失败：邮箱或密码错误');
+    else if(m.indexOf('Email not confirmed')>-1)toast('邮箱尚未验证，请先在邮箱中点击确认链接');
+    else toast('登录失败：'+m);
+    return;
+  }
   enterApp(data.user);
 }
 async function doRegister(){
-  const email=val('lg-user'),pw=document.getElementById('lg-pass').value;
+  const email=val('lg-user').toLowerCase(),pw=document.getElementById('lg-pass').value;
   if(!email){toast('请输入邮箱');return}
   if(pw.length<6){toast('密码至少 6 位');return}
   const {data,error}=await sb.auth.signUp({email,password:pw});
@@ -533,16 +796,69 @@ async function enterApp(user){
 }
 async function doLogout(){try{await sb.auth.signOut()}catch(e){} cloudReady=false;sessionStorage.removeItem('lms_user');VIEWS.forEach(id=>document.getElementById(id).classList.add('hidden'));document.getElementById('view-login').classList.remove('hidden')}
 function renderDash(){
-  document.getElementById('cnt-lit').textContent='在办案件 '+DB.cases.length+' 件';
-  document.getElementById('cnt-biz').textContent='分析中客户 '+DB.clients.length+' 家';
+  document.getElementById('cnt-biz').textContent='未诉 '+DB.clients.length+' 家 · 诉讼 '+DB.cases.length+' 件';
+  document.getElementById('cnt-memo').textContent='备忘录 '+(DB.memos||[]).length+' 个 · 记录 '+(DB.memos||[]).reduce((s,m)=>s+m.records.length,0)+' 条';
   const cf=DB.fees.casefee.reduce((s,x)=>s+Number(x.amount||0),0);
   document.getElementById('cnt-fee').textContent='费用记录 '+(DB.fees.regular.length+DB.fees.service.length+DB.fees.casefee.length)+' 条';
   const fpMods=Object.values(DB.fuping).reduce((s,a)=>s+a.length,0);
   const fpRecs=Object.values(DB.fuping).reduce((s,a)=>s+a.reduce((x,m)=>x+m.records.length,0),0);
   document.getElementById('cnt-fuping').textContent='功能模块 '+fpMods+' 个 · 记录 '+fpRecs+' 条';
-  document.getElementById('cnt-seal2').textContent='在管印章 '+DB.seals.length+' 枚 · 档案记录 '+(DB.archives.electronic.records.length+DB.archives.room.records.length)+' 条';
   const todoOpen=(DB.todos||[]).filter(t=>!t.done).length;
-  document.getElementById('cnt-todo').textContent=todoOpen?('待办 '+todoOpen+' 项'):'全部完成 ✓';
+  const todoOd=(DB.todos||[]).filter(t=>!t.done&&t.date&&t.date<tdFmt(new Date())).length;
+  document.getElementById('cnt-todo').textContent=(todoOpen?('待办 '+todoOpen+' 项'):'全部完成 ✓')+(todoOd?(' · 逾期 '+todoOd+' 项'):'');
+  const h=new Date().getHours();
+  document.getElementById('wl-title').textContent=(h<6?'夜深了':h<11?'上午好':h<14?'中午好':h<18?'下午好':'晚上好')+'，欢迎回来';
+  document.getElementById('wl-date').textContent='今天是 '+new Date().toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
+  const setC=(id,txt)=>{const el=document.getElementById(id);if(el)el.textContent=txt};
+  setC('cnt-consult','待答复 '+(DB.consults||[]).filter(q=>q.status==='待答复').length+' 件 · FAQ '+(DB.consults||[]).filter(q=>q.faq).length+' 条');
+  setC('cnt-docs','文书 '+(DB.docFiles||[]).length+' 个');
+  renderDashMsg();
+  const dc=document.getElementById('dashCockpit');
+  if(dc&&typeof buildDashCockpitHTML==='function')dc.innerHTML='<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap"><h3 style="margin:0;font-size:15.5px">📊 法务驾驶舱</h3><span class="sub" style="font-size:12px">数据实时取自各模块</span><span style="flex:1"></span><span class="mini-link" onclick="go(\'report\')">完整报表 →</span></div>'+buildDashCockpitHTML();
+}
+function navSet(v){document.querySelectorAll('.side-nav .nav-item').forEach(n=>n.classList.toggle('on',n.dataset.v===v))}
+/* 消息队列：案件日程 + 待答复工单 + 近期待办 + 最新备忘 */
+function buildMsgHTML(){
+  const todayS=tdToday();let html='';
+  const in14=new Date();in14.setDate(in14.getDate()+14);const d14=tdFmt(in14);
+  const caseItems=[];
+  (DB.cases||[]).forEach(c=>{(c.arrangements||[]).forEach(a=>{if(!a.done&&a.date&&a.date>=todayS&&a.date<=d14)caseItems.push({c,a})})});
+  caseItems.sort((x,y)=>x.a.date.localeCompare(y.a.date)).slice(0,3).forEach(x=>{
+    html+=`<div class="msg-item" onclick="go('lit');openCase('${x.c.id}')"><span class="d">${x.a.date}</span><span class="t">[${esc(x.a.type)}] ${esc(x.a.title)}</span><span class="tag tag-red">案件</span></div>`;
+  });
+  const pendingC=(DB.consults||[]).filter(q=>q.status==='待答复');
+  if(pendingC.length)html+=`<div class="msg-item" onclick="go('consult')"><span class="d">${pendingC[0].time}</span><span class="t">有 ${pendingC.length} 件法律咨询待答复</span><span class="tag tag-blue">工单</span></div>`;
+  (DB.todos||[]).filter(t=>!t.done).sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999')).slice(0,4).forEach(t=>{
+    const od=t.date&&t.date<todayS;
+    html+=`<div class="msg-item${od?' od':''}" onclick="go('todo');tdSelect('${t.date||todayS}')"><span class="d">${t.date||'未定'}</span><span class="t">${esc(t.title)}</span>${od?'<span class="tag tag-red">逾期</span>':''}</div>`;
+  });
+  (DB.memos||[]).flatMap(m=>m.records.map(r=>({time:r.time,content:r.content,who:m.toWho,mid:m.id}))).sort((a,b)=>b.time.localeCompare(a.time)).slice(0,1).forEach(r=>{
+    html+=`<div class="msg-item" onclick="go('memo')"><span class="d">${r.time}</span><span class="t">致 ${esc(r.who)}：${esc(r.content)}</span><span class="tag tag-gray">备忘</span></div>`;
+  });
+  return html||'<div class="msg-none">暂无消息，工作已全部处理完 ✓</div>';
+}
+function renderDashMsg(){const box=document.getElementById('msgList');if(!box)return;box.innerHTML=buildMsgHTML()}
+/* 全局搜索 */
+function dashSearch(q){
+  const box=document.getElementById('gsDrop');
+  q=(q||'').trim();
+  if(!q){box.classList.add('hidden');box.innerHTML='';return}
+  const ql=q.toLowerCase();const hit=s=>String(s||'').toLowerCase().includes(ql);
+  const todayS=tdToday();const res=[];
+  (DB.cases||[]).forEach(c=>{if(hit(c.name)||hit(c.caseNo)||hit(c.oppo)||hit(c.court))res.push({t:'案件',tag:'tag-blue',txt:c.name,go:"go('lit');openCase('"+c.id+"')"})});
+  (DB.clients||[]).forEach(c=>{if(hit(c.name))res.push({t:'客户',tag:'tag-orange',txt:c.name,go:"go('biz');enterPrelit();openClient('"+c.id+"')"})});
+  (DB.todos||[]).forEach(t=>{if(hit(t.title))res.push({t:'待办',tag:'tag-green',txt:t.title,go:"go('todo');tdSelect('"+(t.date||todayS)+"')"})});
+  (DB.memos||[]).forEach(m=>{
+    if(hit(m.toWho))res.push({t:'备忘',tag:'tag-gray',txt:'致 '+m.toWho,go:"go('memo')"});
+    m.records.forEach(r=>{if(hit(r.content))res.push({t:'备忘',tag:'tag-gray',txt:r.content,go:"go('memo')"})});
+  });
+  if(hit(DB.memoPad))res.push({t:'便签',tag:'tag-gray',txt:'对内便签：'+String(DB.memoPad).slice(0,30)+'…',go:"go('memo');setMemoTab('in')"});
+  ['2769','2779'].forEach(pl=>{(DB.fuping[pl]||[]).forEach(m=>{if(hit(m.name))res.push({t:'富平99',tag:'tag-blue',txt:m.name,go:"go('fuping');openPlot('"+pl+"');openFpMod('"+m.id+"')"})})});
+  (DB.consults||[]).forEach(c=>{if(hit(c.question)||hit(c.asker))res.push({t:'工单',tag:'tag-orange',txt:c.question,go:"go('consult')"})});
+  (DB.docFiles||[]).forEach(d=>{if(hit(d.name))res.push({t:'文书',tag:'tag-gray',txt:d.name,go:"go('docs')"})});
+  const top=res.slice(0,8);
+  box.innerHTML=top.length?top.map(r=>`<div class="gs-item" onclick="document.getElementById('gsDrop').classList.add('hidden');document.getElementById('gsInput').value='';${r.go}"><span class="tag ${r.tag}">${r.t}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.txt)}</span></div>`).join(''):'<div class="gs-none">未找到匹配「'+esc(q)+'」的内容</div>';
+  box.classList.remove('hidden');
 }
 
 /* ==================== 通用弹窗 ==================== */
@@ -559,7 +875,7 @@ function val(id){return document.getElementById(id).value.trim()}
 function setErr(id,msg){const e=document.getElementById(id);e.style.borderColor='var(--red)';toast(msg);return false}
 
 /* ==================== 诉讼管理 ==================== */
-const LIT_TABS=[['overview','案件总览'],['detail','案件详情'],['process','案件进程'],['cost','案件费用'],['material','案件材料'],['arrange','相关安排']];
+const LIT_TABS=[['overview','案件总览'],['detail','案件详情'],['process','案件进程'],['cost','案件费用'],['material','案件材料'],['arrange','相关安排'],['review','复盘与执行']];
 let curCase=null, litTab='overview';
 
 function renderLitList(){
@@ -577,14 +893,14 @@ function renderLitList(){
 function showLitList(){
   document.getElementById('lit-list-page').classList.remove('hidden');
   document.getElementById('lit-detail-page').classList.add('hidden');
-  document.getElementById('lit-crumb2').textContent='';document.getElementById('litAddBtn').classList.remove('hidden');
+  document.getElementById('lit-crumb2').textContent='/ 诉讼管理';document.getElementById('litAddBtn').classList.remove('hidden');
   renderLitList();
 }
 function openCase(id){
   curCase=DB.cases.find(c=>c.id===id); if(!curCase)return;
   document.getElementById('lit-list-page').classList.add('hidden');
   document.getElementById('lit-detail-page').classList.remove('hidden');
-  document.getElementById('lit-crumb2').textContent='/ '+curCase.name;
+  document.getElementById('lit-crumb2').textContent='/ 诉讼管理 / '+curCase.name;
   document.getElementById('litAddBtn').classList.add('hidden');
   litTab='overview'; renderLitDetail();
   window.scrollTo(0,0);
@@ -601,6 +917,7 @@ function renderLitDetail(){
   else if(litTab==='cost')B.innerHTML=litCost(c);
   else if(litTab==='material'){B.innerHTML=litMaterial(c);bindDropzone(c);}
   else if(litTab==='arrange')B.innerHTML=litArrange(c);
+  else if(litTab==='review')B.innerHTML=litReview(c);
 }
 function infoCell(k,v,cls){return `<div class="info-item"><div class="k">${k}</div><div class="v ${cls||''}">${v===''||v==null?'—':v}</div></div>`}
 function litOverview(c){
@@ -783,21 +1100,32 @@ function renderBizList(){
   html+='<thead><tr><th>客户名称</th><th>合同开始日期</th><th>合同结束日期</th><th class="num">月租金（元）</th><th>租金支付方式</th><th>履约情况</th><th>操作</th></tr></thead><tbody>';
   if(!list.length)html+='<tr><td colspan="7"><div class="empty">暂无客户，点击右上角「新增客户」创建</div></td></tr>';
   list.forEach(c=>{
-    html+=`<tr><td><span class="link" onclick="openClient('${c.id}')">${esc(c.name)}</span></td><td>${esc(c.contractStart)}</td><td>${esc(c.contractEnd)}</td><td class="num">${money(c.rent)}</td><td>${esc(c.payMethod)}</td><td>${esc(c.performance)}</td><td><button class="btn btn-sm" onclick="openClient('${c.id}')">查看</button></td></tr>`;
+    html+=`<tr><td><span class="link" onclick="openClient('${c.id}')">${esc(c.name)}</span></td><td>${esc(c.contractStart)}</td><td>${esc(c.contractEnd)}</td><td class="num">${money(c.rent)}</td><td>${esc(c.payMethod)}</td><td class="ellipsis" title="${esc(c.performance)}">${esc(c.performance)}</td><td><button class="btn btn-sm" onclick="openClient('${c.id}')">查看</button></td></tr>`;
   });
   document.getElementById('bizListWrap').innerHTML=html+'</tbody></table>';
 }
+function showBizHome(){
+  curClient=null;
+  document.getElementById('biz-home').classList.remove('hidden');
+  document.getElementById('biz-list-page').classList.add('hidden');
+  document.getElementById('biz-detail-page').classList.add('hidden');
+  document.getElementById('biz-crumb2').textContent='';document.getElementById('bizAddBtn').classList.add('hidden');
+  document.getElementById('cnt-prelit').textContent='分析中客户 '+DB.clients.length+' 家';
+  document.getElementById('cnt-lit2').textContent='在办案件 '+DB.cases.length+' 件';
+}
+function enterPrelit(){showBizList()}
 function showBizList(){
+  document.getElementById('biz-home').classList.add('hidden');
   document.getElementById('biz-list-page').classList.remove('hidden');
   document.getElementById('biz-detail-page').classList.add('hidden');
-  document.getElementById('biz-crumb2').textContent='';document.getElementById('bizAddBtn').classList.remove('hidden');
+  document.getElementById('biz-crumb2').textContent='/ 尚未进入诉讼';document.getElementById('bizAddBtn').classList.remove('hidden');
   renderBizList();
 }
 function openClient(id){
   curClient=DB.clients.find(c=>c.id===id); if(!curClient)return;
   document.getElementById('biz-list-page').classList.add('hidden');
   document.getElementById('biz-detail-page').classList.remove('hidden');
-  document.getElementById('biz-crumb2').textContent='/ '+curClient.name;
+  document.getElementById('biz-crumb2').textContent='/ 尚未进入诉讼 / '+curClient.name;
   document.getElementById('bizAddBtn').classList.add('hidden');
   renderBizDetail(); window.scrollTo(0,0);
 }
@@ -837,7 +1165,7 @@ function remainLease(c){
 }
 function openClientModal(id){
   const c=id?DB.clients.find(x=>x.id===id):{name:'',contractStart:'',contractEnd:'',rent:'',payMethod:'',deposit:'',performance:''};
-  openModal(id?'编辑客户基本情况':'新增客户',`<div class="frm-row">
+  openModal(id?'编辑客户基本情况':'新增客户',`<div class="frm-row fs-font">
    <div class="field full"><label>客户名称 *</label><input id="cl-name" value="${esc(c.name)}"></div>
    <div class="field"><label>合同开始日期 *</label><input id="cl-start" type="date" value="${c.contractStart}"></div>
    <div class="field"><label>合同结束日期 *</label><input id="cl-end" type="date" value="${c.contractEnd}"></div>
@@ -855,6 +1183,31 @@ function openClientModal(id){
   });
 }
 function delClient(){if(!confirm('确定删除该客户及其分析数据？'))return;DB.clients=DB.clients.filter(c=>c.id!==curClient.id);save();showBizList();toast('已删除')}
+/* 一键迁移：尚未进入诉讼 → 诉讼管理 */
+function migrateToLit(){
+  if(!curClient)return;
+  const c=curClient;
+  const problems=(c.problems||[]).map((p,i)=>(i+1)+'. '+p.title+(p.desc?'：'+p.desc:'')).join('\n');
+  const lines=['【由「尚未进入诉讼」迁移】'];
+  if(c.contractStart||c.contractEnd)lines.push('合同期限：'+(c.contractStart||'—')+' 至 '+(c.contractEnd||'—'));
+  if(c.rent)lines.push('月租金：'+money(c.rent)+' 元 · 支付方式：'+(c.payMethod||'—'));
+  if(c.performance)lines.push('履约情况：'+c.performance);
+  if(problems)lines.push('现存问题：\n'+problems);
+  if(c.analysis)lines.push('问题分析：\n'+c.analysis);
+  if(c.prep&&c.prep.need)lines.push('诉前准备：建议进行'+(c.prep.note?'\n'+c.prep.note:''));
+  openModal('一键迁移到诉讼管理',`<div class="notice-bar" style="margin-bottom:16px">⚠️ 将把「${esc(c.name)}」迁移为诉讼案件：分析内容自动写入案情简介，迁移后该客户从「尚未进入诉讼」移除。</div><div class="frm-row">
+   <div class="field full"><label>案件名称 *</label><input id="mg-name" value="${esc(c.name)}"></div>
+   <div class="field"><label>我方角色</label><select id="mg-role">${['原告','被告','申请人','被申请人','申请执行人','被申请执行人','第三人'].map(r=>`<option>${r}</option>`).join('')}</select></div>
+   <div class="field"><label>案件状态</label><select id="mg-status">${['诉前','一审中','二审中','执行中','已结案'].map(s=>`<option>${s}</option>`).join('')}</select></div>
+   <div class="field"><label>对方当事人</label><input id="mg-oppo" placeholder="选填"></div>
+   <div class="field"><label>受理法院</label><input id="mg-court" placeholder="选填"></div></div>`,()=>{
+    const name=val('mg-name');if(!name)return setErr('mg-name','请填写案件名称');
+    DB.cases.push({id:uid(),name,caseNo:'',court:val('mg-court'),role:val('mg-role'),oppo:val('mg-oppo'),status:val('mg-status'),amount:0,filingDate:today(),summary:lines.join('\n'),process:[],costs:[],materials:[],arrangements:[]});
+    DB.clients=DB.clients.filter(x=>x.id!==c.id);
+    curClient=null;
+    save();go('lit');toast('已迁移到诉讼管理');return true;
+  },'确认迁移');
+}
 function openProblemModal(pid){
   const c=curClient; const p=pid?c.problems.find(x=>x.id===pid):{title:'',desc:'',level:'中'};
   openModal(pid?'编辑问题':'添加现存问题',`<div class="frm-row">
@@ -1042,6 +1395,8 @@ function renderFpRecords(){
     html+=`<tr><td>${esc(r.time)}</td><td>${esc(r.content)}</td><td>${esc(r.timeline)}</td><td>${esc(r.todo)}</td><td>${esc(r.other)}</td><td><button class="btn btn-sm" onclick="openFpRecModal(null,'${r.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delFpRec('${r.id}')">删除</button></td></tr>`;
   });
   document.getElementById('fpRecWrap').innerHTML=html+'</tbody></table>';
+  document.getElementById('fpFileWrap').innerHTML=fpFileSection();
+  bindFpDropzone();
 }
 function openFpRecModal(mid,rid){
   if(mid)curFpMod=(DB.fuping[curPlot]||[]).find(m=>m.id===mid);
@@ -1080,91 +1435,131 @@ function delFpModule(mid){
   toast('已删除');
 }
 
-/* ==================== 印章、档案管理 ==================== */
-let sealMod=null, archTab='electronic';
-function showSealHome(){
-  sealMod=null;
-  document.getElementById('seal-home').classList.remove('hidden');
-  document.getElementById('seal-module').classList.add('hidden');
-  document.getElementById('seal-crumb2').textContent='';
-  document.getElementById('cnt-seal').textContent=DB.seals.length+' 枚在管印章';
-  document.getElementById('cnt-archive').textContent='电子档案 '+DB.archives.electronic.records.length+' 条 · 档案室 '+DB.archives.room.records.length+' 条';
+/* ==================== 备忘录 ==================== */
+let curMemo=null;
+function showMemoHome(){
+  curMemo=null;
+  document.getElementById('memo-home').classList.remove('hidden');
+  document.getElementById('memo-detail').classList.add('hidden');
+  document.getElementById('memo-crumb2').textContent='';document.getElementById('memoAddBtn').classList.remove('hidden');
+  renderMemoList();
 }
-function openSealModule(k){
-  sealMod=k;
-  document.getElementById('seal-home').classList.add('hidden');
-  document.getElementById('seal-module').classList.remove('hidden');
-  document.getElementById('seal-crumb2').textContent='/ '+(k==='seal'?'印章管理':'档案管理');
-  document.getElementById('sealModuleTitle').textContent=k==='seal'?'印章管理':'档案管理';
-  document.getElementById('sealImportBtn').classList.toggle('hidden',k!=='seal');
-  document.getElementById('sealTplBtn').classList.toggle('hidden',k!=='seal');
-  const addBtn=document.getElementById('sealAddBtn');
-  addBtn.textContent=k==='seal'?'＋ 新增印章':'＋ 新增记录';
-  const isArch=k==='archive';
-  document.getElementById('archiveTabs').style.display=isArch?'flex':'none';
-  document.getElementById('archiveNotice').style.display=isArch?'flex':'none';
-  document.getElementById('archiveNotePanel').style.display=isArch?'block':'none';
-  if(isArch)renderArchiveTabs();
-  renderSealTable();
+function renderMemoList(){
+  const list=DB.memos||[];
+  if(!list.length){document.getElementById('memoList').innerHTML='<div class="empty" style="grid-column:1/-1">暂无备忘录，点右上角「新增备忘录」，自定义设置致谁</div>';return}
+  document.getElementById('memoList').innerHTML=list.map(m=>{
+    const last=m.records.length?[...m.records].sort((a,b)=>b.time.localeCompare(a.time))[0].time:'—';
+    return `<div class="mod-card">
+    <h4>📝 致 ${esc(m.toWho)}<span style="flex:1"></span><button class="btn btn-sm btn-primary" onclick="openMemoBoard('${m.id}')">进入</button></h4>
+    <div class="sub" style="font-size:12px;margin:10px 0">记录 ${m.records.length} 条 · 最近更新：${esc(last)}</div>
+    <button class="btn btn-sm" onclick="openMemoRecModal('${m.id}')">＋ 新增记录</button>
+    <button class="btn btn-sm btn-danger" style="margin-left:6px" onclick="delMemoBoard('${m.id}')">删除</button>
+   </div>`;
+  }).join('');
 }
-function renderArchiveTabs(){
-  document.getElementById('archiveTabs').innerHTML=[['electronic','电子档案'],['room','档案室']].map(t=>`<div class="tab ${archTab===t[0]?'on':''}" onclick="archTab='${t[0]}';renderArchiveTabs();renderSealTable()">${t[1]}</div>`).join('');
-  document.getElementById('archiveNote').textContent=DB.archives[archTab].note||'（未设置说明，点右上角「编辑说明」自定义）';
+function openMemoBoard(id){
+  curMemo=DB.memos.find(m=>m.id===id);if(!curMemo)return;
+  document.getElementById('memo-home').classList.add('hidden');
+  document.getElementById('memo-detail').classList.remove('hidden');
+  document.getElementById('memo-crumb2').textContent='/ 致 '+curMemo.toWho;
+  document.getElementById('memoAddBtn').classList.add('hidden');
+  renderMemoRecs();window.scrollTo(0,0);
 }
-function renderSealTable(){
-  const w=document.getElementById('sealTableWrap');
-  if(sealMod==='seal'){
-    const FREQ_ORDER={'高':0,'中':1,'低':2,'基本不使用':3};
-    const slist=[...DB.seals].sort((a,b)=>(FREQ_ORDER[a.freq]??4)-(FREQ_ORDER[b.freq]??4)||String(a.company).localeCompare(String(b.company),'zh'));
-    let html='<table class="tbl"><colgroup><col style="width:6%"><col style="width:19%"><col style="width:15%"><col style="width:17%"><col style="width:13%"><col style="width:13%"><col style="width:12%"></colgroup>';
-    html+='<thead><tr><th>序号</th><th>公司</th><th>印章性质</th><th>印章现持有人</th><th>交接时间</th><th title="按使用频率由高到低排列">使用频率 ↓</th><th>操作</th></tr></thead><tbody>';
-    if(!slist.length)html+='<tr><td colspan="7"><div class="empty">暂无印章记录，点右上角「新增印章」创建，或使用「批量导入Excel」</div></td></tr>';
-    slist.forEach((s,i)=>{html+=`<tr><td class="sub">${i+1}</td><td>${esc(s.company)}</td><td><span class="tag tag-blue">${esc(s.type)}</span></td><td>${esc(s.holder)}</td><td>${esc(s.handover)}</td><td><span class="tag ${s.freq==='高'?'tag-red':s.freq==='中'?'tag-orange':'tag-gray'}">${esc(s.freq)}</span></td><td><button class="btn btn-sm" onclick="openSealRecModal('${s.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delSealRec('${s.id}')">删除</button></td></tr>`});
-    w.innerHTML=html+'</tbody></table>';
-  }else{
-    const recs=DB.archives[archTab].records;
-    let html='<table class="tbl"><colgroup><col style="width:13%"><col style="width:45%"><col style="width:30%"><col style="width:12%"></colgroup>';
-    html+='<thead><tr><th>时间</th><th>内容</th><th>备注</th><th>操作</th></tr></thead><tbody>';
-    if(!recs.length)html+='<tr><td colspan="4"><div class="empty">暂无记录（模块暂未启用，可先添加说明，启用后直接录入）</div></td></tr>';
-    [...recs].sort((a,b)=>b.time.localeCompare(a.time)).forEach(r=>{
-      html+=`<tr><td>${esc(r.time)}</td><td>${esc(r.content)}</td><td>${esc(r.note)}</td><td><button class="btn btn-sm" onclick="openSealRecModal('${r.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delSealRec('${r.id}')">删除</button></td></tr>`});
-    w.innerHTML=html+'</tbody></table>';
-  }
+function renderMemoRecs(){
+  const m=curMemo;
+  document.getElementById('memoTitle').textContent='致 '+m.toWho+' 的备忘录';
+  let html='<table class="tbl"><colgroup><col style="width:14%"><col style="width:52%"><col style="width:22%"><col style="width:12%"></colgroup>';
+  html+='<thead><tr><th>时间</th><th>内容</th><th>备注</th><th>操作</th></tr></thead><tbody>';
+  if(!m.records.length)html+='<tr><td colspan="4"><div class="empty">暂无记录，点右上角「新增记录」创建</div></td></tr>';
+  [...m.records].sort((a,b)=>b.time.localeCompare(a.time)).forEach(r=>{
+    html+=`<tr><td>${esc(r.time)}</td><td>${esc(r.content)}</td><td>${esc(r.note)}</td><td><button class="btn btn-sm" onclick="openMemoRecModal(null,'${r.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delMemoRec('${r.id}')">删除</button></td></tr>`;
+  });
+  document.getElementById('memoRecWrap').innerHTML=html+'</tbody></table>';
 }
-function openSealRecModal(rid){
-  if(sealMod==='seal'){
-    const s=rid?DB.seals.find(x=>x.id===rid):{company:'',type:'公章',holder:'安子玥',handover:today(),freq:'中'};
-    openModal(rid?'编辑印章':'新增印章',`<div class="frm-row">
-     <div class="field"><label>公司 *</label><input id="sl-company" value="${esc(s.company)}" placeholder="如：富平XX置业有限公司"></div>
-     <div class="field"><label>印章性质 *</label><select id="sl-type">${SEAL_TYPES.map(t=>`<option ${s.type===t?'selected':''}>${t}</option>`).join('')}</select></div>
-     <div class="field"><label>印章现持有人 *（默认安子玥，可修改）</label><input id="sl-holder" value="${esc(s.holder)}"></div>
-     <div class="field"><label>交接时间</label><input id="sl-handover" type="date" value="${s.handover}"></div>
-     <div class="field full"><label>印章使用频率</label><select id="sl-freq">${SEAL_FREQS.map(f=>`<option ${s.freq===f?'selected':''}>${f}</option>`).join('')}</select></div></div>`,()=>{
-      const company=val('sl-company');if(!company)return setErr('sl-company','请填写公司');
-      const obj={id:rid||uid(),company,type:val('sl-type'),holder:val('sl-holder')||'安子玥',handover:val('sl-handover'),freq:val('sl-freq')};
-      if(rid)Object.assign(DB.seals.find(x=>x.id===rid),obj);else DB.seals.push(obj);
-      save();renderSealTable();toast('已保存');return true;
-    });
-  }else{
-    const recs=DB.archives[archTab].records;
-    const r=rid?recs.find(x=>x.id===rid):{time:today(),content:'',note:''};
-    openModal(rid?'编辑记录':'新增记录',`<div class="frm-row">
-     <div class="field"><label>时间 *</label><input id="ar-time" type="date" value="${r.time}"></div>
-     <div class="field full"><label>内容 *</label><textarea id="ar-content">${esc(r.content)}</textarea></div>
-     <div class="field full"><label>备注</label><input id="ar-note" value="${esc(r.note)}"></div></div>`,()=>{
-      const content=val('ar-content');if(!content)return setErr('ar-content','请填写内容');
-      const obj={id:rid||uid(),time:val('ar-time')||today(),content,note:val('ar-note')};
-      if(rid)Object.assign(recs.find(x=>x.id===rid),obj);else recs.push(obj);
-      save();renderSealTable();toast('已保存');return true;
-    });
-  }
-}
-function delSealRec(rid){if(!confirm('确定删除该记录？'))return;if(sealMod==='seal')DB.seals=DB.seals.filter(x=>x.id!==rid);else DB.archives[archTab].records=DB.archives[archTab].records.filter(x=>x.id!==rid);save();renderSealTable();toast('已删除')}
-function editArchiveNote(){
-  openModal('编辑模块说明（自定义设置）',`<div class="field"><label>说明内容（启用前的用途、字段计划、负责人等）</label><textarea id="an-note" style="min-height:120px">${esc(DB.archives[archTab].note)}</textarea></div>`,()=>{
-    DB.archives[archTab].note=val('an-note');save();renderArchiveTabs();toast('已保存');return true;
+function openMemoModal(){
+  openModal('新增备忘录',`<div class="field"><label>备忘录对象（致谁）*</label><input id="mm-who" placeholder="如：张律师 / 财务 / 自己"></div>`,()=>{
+    const toWho=val('mm-who');if(!toWho)return setErr('mm-who','请填写备忘录对象');
+    DB.memos.push({id:uid(),toWho,createdAt:today(),records:[]});
+    save();renderMemoList();toast('已新增备忘录');return true;
   });
 }
+function renameMemo(){
+  if(!curMemo)return;
+  openModal('修改致谁',`<div class="field"><label>备忘录对象（致谁）*</label><input id="mm-who" value="${esc(curMemo.toWho)}"></div>`,()=>{
+    const toWho=val('mm-who');if(!toWho)return setErr('mm-who','请填写备忘录对象');
+    curMemo.toWho=toWho;save();
+    document.getElementById('memo-crumb2').textContent='/ 致 '+toWho;
+    renderMemoRecs();toast('已保存');return true;
+  });
+}
+function delMemoBoard(mid){
+  const target=mid||(curMemo&&curMemo.id);if(!target)return;
+  if(!confirm('确定删除该备忘录及其全部记录？'))return;
+  DB.memos=DB.memos.filter(m=>m.id!==target);
+  save();
+  if(curMemo&&curMemo.id===target){curMemo=null;showMemoHome()}
+  else renderMemoList();
+  toast('已删除');
+}
+function openMemoRecModal(mid,rid){
+  if(mid)curMemo=DB.memos.find(m=>m.id===mid);
+  if(!curMemo){toast('请先进入备忘录');return}
+  const r=rid?curMemo.records.find(x=>x.id===rid):{time:today(),content:'',note:''};
+  openModal(rid?'编辑记录':'新增记录',`<div class="frm-row">
+   <div class="field"><label>时间 *</label><input id="mr-time" type="date" value="${r.time}"></div>
+   <div class="field full"><label>内容 *</label><textarea id="mr-content">${esc(r.content)}</textarea></div>
+   <div class="field full"><label>备注</label><input id="mr-note" value="${esc(r.note)}"></div></div>`,()=>{
+    const content=val('mr-content');if(!content)return setErr('mr-content','请填写内容');
+    const obj={id:rid||uid(),time:val('mr-time')||today(),content,note:val('mr-note')};
+    if(rid){const i=curMemo.records.findIndex(x=>x.id===rid);curMemo.records[i]=obj}else curMemo.records.push(obj);
+    save();
+    if(!document.getElementById('memo-detail').classList.contains('hidden'))renderMemoRecs();else renderMemoList();
+    toast('已保存');return true;
+  });
+}
+function delMemoRec(rid){if(!confirm('确定删除该记录？'))return;curMemo.records=curMemo.records.filter(r=>r.id!==rid);save();renderMemoRecs();toast('已删除')}
+
+/* ==================== 富平99 · 模块文件上传 ==================== */
+function fpFileSection(){
+  const m=curFpMod;
+  if(!Array.isArray(m.files))m.files=[];
+  let html=`<div class="upzone" id="fpUpzone"><div class="big">📤</div><b>点击或拖拽上传本模块相关文件</b><div style="font-size:12px;margin-top:6px">支持压缩包（zip/rar/7z）、PDF、Word、Excel、图片等格式，单文件 ≤ 3MB（内容随数据一并保存，可下载）</div></div>
+  <input type="file" id="fpFileInput" multiple class="hidden">
+  <div style="margin-top:14px">`;
+  if(!m.files.length)html+='<div class="empty">暂无文件，点击上方区域上传</div>';
+  else{
+    html+='<table class="tbl"><colgroup><col style="width:6%"><col style="width:36%"><col style="width:12%"><col style="width:12%"><col style="width:16%"><col style="width:18%"></colgroup><thead><tr><th></th><th>文件名</th><th>格式</th><th class="num">大小</th><th>上传时间</th><th>操作</th></tr></thead><tbody>';
+    m.files.forEach(f=>{html+=`<tr><td class="center">${fmtIcon(f.name)}</td><td>${esc(f.name)}</td><td><span class="tag tag-gray">.${esc(f.ext)}</span></td><td class="num">${f.size}</td><td>${esc(f.time)}</td><td>${f.data?`<button class="btn btn-sm" onclick="downloadFpMat('${f.id}')">⬇ 下载</button> `:'<span class="sub" style="font-size:12px">（仅登记）</span> '}<button class="btn btn-sm btn-danger" onclick="delFpMat('${f.id}')">删除</button></td></tr>`});
+    html+='</tbody></table>';
+  }
+  return html+'</div>';
+}
+function bindFpDropzone(){
+  const z=document.getElementById('fpUpzone'),f=document.getElementById('fpFileInput');
+  if(!z)return;
+  z.onclick=()=>f.click();
+  z.ondragover=e=>{e.preventDefault();z.classList.add('drag')};
+  z.ondragleave=()=>z.classList.remove('drag');
+  z.ondrop=e=>{e.preventDefault();z.classList.remove('drag');handleFiles(e.dataTransfer.files)};
+  f.onchange=()=>handleFiles(f.files);
+  function handleFiles(files){
+    [...files].forEach(file=>{
+      const ext=file.name.split('.').pop().toLowerCase();
+      if(!FMT_OK.includes(ext)){toast('不支持的格式：'+file.name);return}
+      const rec={id:uid(),name:file.name,ext,time:new Date().toLocaleString('zh-CN'),size:(file.size/1024).toFixed(1)+' KB',data:null};
+      const done=()=>{curFpMod.files.push(rec);save();renderFpRecords();toast('已上传：'+file.name)};
+      if(file.size<=3*1024*1024){
+        const r=new FileReader();r.onload=()=>{rec.data=r.result;done()};r.readAsDataURL(file);
+      }else{rec.size=(file.size/1048576).toFixed(2)+' MB';done();}
+    });
+    f.value='';
+  }
+}
+function downloadFpMat(id){
+  const m=curFpMod.files.find(x=>x.id===id);if(!m||!m.data)return;
+  const a=document.createElement('a');a.href=m.data;a.download=m.name;a.click();
+}
+function delFpMat(id){if(!confirm('确定删除该文件？'))return;curFpMod.files=curFpMod.files.filter(m=>m.id!==id);save();renderFpRecords();toast('已删除')}
 
 /* ==================== 数据导入导出 ==================== */
 function exportData(){
@@ -1199,11 +1594,12 @@ async function cloudLoad(){
   document.getElementById('lg-user').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
 })();
 /* ==================== 待办事项 ==================== */
-const TODO_COLS=[
-  {key:'today', name:'今日待办', dot:'#2563eb', needDdl:false},
-  {key:'urgent', name:'紧急事项', dot:'#dc2626', needDdl:true},
-  {key:'normal', name:'一般待办', dot:'#d97706', needDdl:true}
-];
+let tdYear,tdMonth,tdSelDate=tdToday(),tdEditingId=null,tdDoneCollapsed=false;
+(function(){const n=new Date();tdYear=n.getFullYear();tdMonth=n.getMonth()})();
+function tdPad(n){return String(n).padStart(2,'0')}
+function tdFmt(d){return d.getFullYear()+'-'+tdPad(d.getMonth()+1)+'-'+tdPad(d.getDate())}
+function tdToday(){return tdFmt(new Date())}
+function tdFmtTime(ts){if(!ts)return'';const d=new Date(ts);return tdFmt(d)+' '+tdPad(d.getHours())+':'+tdPad(d.getMinutes())}
 function openTodoModal(){
   DB.todoMin=false;save();renderTodos();
   document.getElementById('todoMask').classList.remove('hidden');
@@ -1222,65 +1618,170 @@ function renderTodoFab(){
   const b=document.getElementById('todoBadge');
   b.textContent=open>99?'99+':open;b.style.display=open?'flex':'none';
 }
-function ddlText(t){
-  if(!t.ddl)return null;
-  const days=Math.ceil((new Date(t.ddl+'T23:59:59')-new Date())/86400000);
-  const label=t.ddl===today()?'今天':t.ddl.slice(5).replace('-','/');
-  if(days<0)return{txt:'已逾期 '+(-days)+' 天',cls:'ddl-red'};
-  if(days===0)return{txt:'今天截止',cls:'ddl-red'};
-  if(days<=3)return{txt:days+' 天后 · '+label,cls:'ddl-orange'};
-  return{txt:label,cls:'ddl-gray'};
+/* 旧版三列待办(col/ddl) → 日历模型(date/priority) 迁移 */
+function migrateTodos(){
+  if(!DB)return;
+  if(!Array.isArray(DB.todos))DB.todos=[];
+  DB.todos=DB.todos.filter(t=>t&&typeof t.title==='string'&&t.title.trim()).map(t=>{
+    if(t.date&&t.priority)return t;
+    return {id:t.id||uid(),title:t.title,date:t.date||t.ddl||tdToday(),
+      priority:t.priority||(t.col==='urgent'?'urgent':'normal'),
+      note:t.note||'',done:!!t.done,createdAt:t.createdAt||Date.now(),doneAt:t.done?(t.doneAt||Date.now()):null};
+  });
+}
+function tdItemHtml(t){
+  if(tdEditingId===t.id)
+    return '<div class="todo-item'+(t.done?' done':'')+'"><div class="edit-row"><input type="text" id="td-edit-'+t.id+'" value="'+esc(t.title)+'" maxlength="120" onkeydown="tdEditKey(event,\''+t.id+'\')"><button class="btn btn-sm btn-primary" onclick="tdSaveEdit(\''+t.id+'\')">保存</button><button class="btn btn-sm" onclick="tdCancelEdit()">取消</button></div></div>';
+  const pr=t.priority==='urgent'?'<span class="tag tag-red">紧急</span>':'<span class="tag tag-orange">一般</span>';
+  const od=(!t.done&&t.date<tdToday())?'<span class="tag tag-red">已逾期</span>':'';
+  const dt=t.done&&t.doneAt?'<span class="tag tag-green">完成于 '+tdFmtTime(t.doneAt)+'</span>':'';
+  const note=t.note?'<div class="todo-meta"><span class="tag tag-gray">'+esc(t.note)+'</span></div>':'';
+  return '<div class="todo-item'+(t.done?' done':'')+'"><button class="todo-check" onclick="toggleTodo(\''+t.id+'\')" title="切换完成状态">'+(t.done?'✓':'')+'</button>'
+    +'<div class="todo-body"><div class="todo-title">'+esc(t.title)+'</div><div class="todo-meta">'+pr+od+dt+'</div>'+note+'</div>'
+    +'<button class="todo-icon-btn" onclick="tdEdit(\''+t.id+'\')" title="编辑">✎</button>'
+    +'<button class="todo-icon-btn del" onclick="delTodo(\''+t.id+'\')" title="删除">×</button></div>';
+}
+function tdHtml(bid){
+  const tds=tdToday();
+  const first=new Date(tdYear,tdMonth,1);
+  const startOffset=(first.getDay()+6)%7;
+  const dim=new Date(tdYear,tdMonth+1,0).getDate();
+  const prevDays=new Date(tdYear,tdMonth,0).getDate();
+  const total=Math.ceil((startOffset+dim)/7)*7;
+  let cells='';
+  for(let i=0;i<total;i++){
+    let dNum,ds,isDim=false;
+    if(i<startOffset){dNum=prevDays-startOffset+i+1;isDim=true;ds=tdFmt(new Date(tdYear,tdMonth-1,dNum))}
+    else if(i<startOffset+dim){dNum=i-startOffset+1;ds=tdYear+'-'+tdPad(tdMonth+1)+'-'+tdPad(dNum)}
+    else{dNum=i-startOffset-dim+1;isDim=true;ds=tdFmt(new Date(tdYear,tdMonth+1,dNum))}
+    let urg=0,nor=0,ok=0;
+    DB.todos.forEach(t=>{if(t.date!==ds)return;if(t.done)ok++;else if(t.priority==='urgent')urg++;else nor++});
+    let caseN=0;(DB.cases||[]).forEach(c=>{(c.arrangements||[]).forEach(a=>{if(!a.done&&a.date===ds)caseN++})});
+    const cls='cal-cell'+(isDim?' dim':'')+(ds===tds?' today':'')+(ds===tdSelDate?' sel':'');
+    let marks='';
+    if(urg)marks+='<span class="mk mk-urg">急 '+urg+'</span>';
+    if(nor)marks+='<span class="mk mk-nor">待 '+nor+'</span>';
+    if(ok)marks+='<span class="mk mk-ok">完 '+ok+'</span>';
+    if(caseN)marks+='<span class="mk mk-case">诉 '+caseN+'</span>';
+    cells+='<div class="'+cls+'" onclick="tdSelect(\''+ds+'\')"><span class="d-num">'+dNum+'</span>'+(ds===tds?'<span class="d-today-tag">今天</span>':'')+'<div class="d-marks">'+marks+'</div></div>';
+  }
+  const wd=['一','二','三','四','五','六','日'].map(w=>'<div class="cal-wd">'+w+'</div>').join('');
+  const d=new Date(tdSelDate+'T00:00:00');
+  const WF=['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+  const list=DB.todos.filter(t=>t.date===tdSelDate);
+  const openL=list.filter(t=>!t.done).sort((a,b)=>((a.priority==='urgent'?0:1)-(b.priority==='urgent'?0:1))||(a.createdAt-b.createdAt));
+  const doneL=list.filter(t=>t.done).sort((a,b)=>(b.doneAt||0)-(a.doneAt||0));
+  const caseDayHtml=tdCaseDayHtml(tdSelDate);
+  return '<div class="td-panel">'
+    +'<div class="td-panel-hd"><div class="cal-nav"><button class="nav-btn" onclick="tdNav(-1)" aria-label="上个月">‹</button><span class="month">'+tdYear+' 年 '+(tdMonth+1)+' 月</span><button class="nav-btn" onclick="tdNav(1)" aria-label="下个月">›</button></div>'
+    +'<button class="btn btn-sm" onclick="tdGoToday()">回到今天</button><span class="spacer"></span>'
+    +'<span class="mk mk-urg">急</span><span class="mk mk-nor">待</span><span class="mk mk-ok">完</span><span class="mk mk-case">诉</span></div>'
+    +'<div class="cal-grid">'+wd+'</div><div class="cal-grid">'+cells+'</div></div>'
+    +'<div class="td-panel">'
+    +'<div class="day-head"><div class="day-date"><span>'+d.getFullYear()+' 年 '+(d.getMonth()+1)+' 月 '+d.getDate()+' 日 · '+WF[d.getDay()]+'</span>'+(tdSelDate===tds?'<span class="today-chip">今天</span>':'')+'</div>'
+    +'<div class="day-sub">'+(openL.length||doneL.length?('共 '+(openL.length+doneL.length)+' 项 · 待办 '+openL.length+' · 已完成 '+doneL.length):'这一天还没有待办事项')+'</div></div>'
+    +caseDayHtml+'<div class="add-form"><input type="text" id="'+bid+'-title" placeholder="为这一天添加待办事项，回车快速添加…" maxlength="120" onkeydown="if(event.key===\'Enter\')tdAdd(\''+bid+'\')"><select id="'+bid+'-pri" aria-label="优先级"><option value="normal">一般</option><option value="urgent">紧急</option></select><button class="btn btn-primary btn-sm" style="padding:8px 16px" onclick="tdAdd(\''+bid+'\')">添加</button></div>'
+    +'<div class="list-sec"><div class="list-hd"><span class="dot" style="background:var(--primary)"></span><b>待办</b><span class="n n-blue">'+openL.length+'</span></div>'
+    +(openL.length?openL.map(tdItemHtml).join(''):'<div class="todo-empty">暂无待办<br>在上方输入框添加，或直接回车快速创建</div>')+'</div>'
+    +'<div class="list-sec"><div class="list-hd"><span class="dot" style="background:var(--green)"></span><b>已完成</b><span class="n n-green">'+doneL.length+'</span><span class="spacer"></span>'
+    +(doneL.length?'<button class="mini-link" onclick="tdToggleDoneList()">'+(tdDoneCollapsed?'展开':'收起')+'</button><button class="mini-link" onclick="tdClearDone()">清空已完成</button>':'')
+    +'</div>'+(tdDoneCollapsed?'':(doneL.length?doneL.map(tdItemHtml).join(''):'<div class="todo-empty">暂无已完成事项</div>'))+'</div>'
+    +'</div>';
 }
 function renderTodos(){
-  if(!Array.isArray(DB.todos))DB.todos=[];
-  ['todoModalBoard','todoPageBoard'].forEach(id=>{
-    const board=document.getElementById(id);if(!board)return;
-    const bid=board.id;
-    board.innerHTML=TODO_COLS.map(col=>{
-      const items=DB.todos.filter(t=>t.col===col.key).sort((a,b)=>(a.done-b.done)||(a.createdAt-b.createdAt));
-      const openCnt=items.filter(t=>!t.done).length;
-      const rows=items.map(t=>{
-        const d=ddlText(t);
-        return `<div class="todo-item ${t.done?'done':''}">
-          <div class="todo-check" onclick="toggleTodo('${t.id}')">${t.done?'✓':''}</div>
-          <div class="todo-body"><div class="todo-title">${esc(t.title)}</div>
-          ${d?`<span class="todo-ddl ${d.cls}">⏰ ${d.txt}</span>`:(col.key==='today'?'<span class="todo-ddl ddl-gray">📌 今天</span>':'')}</div>
-          <button class="todo-del" onclick="delTodo('${t.id}')" title="删除">×</button></div>`;
-      }).join('');
-      return `<div class="todo-col">
-        <div class="todo-col-hd"><span class="dot" style="background:${col.dot}"></span><b>${col.name}</b><span class="n">${openCnt}</span><span class="spacer"></span>
-        <button class="todo-clear" onclick="clearDoneTodo('${col.key}')" title="清除已完成">清空</button>
-        <button class="todo-add" onclick="showTodoForm('${bid}','${col.key}')" title="添加待办">+</button></div>
-        <div class="todo-form" id="${bid}-form-${col.key}">
-          <input type="text" placeholder="要做的事…" id="${bid}-txt-${col.key}" onkeydown="if(event.key==='Enter')submitTodo('${bid}','${col.key}')">
-          <div class="todo-form-row"><input type="date" id="${bid}-ddl-${col.key}" ${col.needDdl?'':'value="'+today()+'"'} min="${today()}">
-          <button class="btn btn-sm btn-primary" onclick="submitTodo('${bid}','${col.key}')">添加</button>
-          <button class="btn btn-sm" onclick="hideTodoForm('${bid}','${col.key}')">取消</button></div>
-        </div>
-        <div class="todo-list">${rows||'<div class="todo-empty">暂无待办，点右上角 + 添加</div>'}</div>
-      </div>`;
-    }).join('');
+  migrateTodos();
+  ['todoModalBoard','todoPageBoard'].forEach(bid=>{
+    const box=document.getElementById(bid);if(!box)return;
+    box.innerHTML=tdHtml(bid);
   });
-  const done=DB.todos.filter(t=>t.done).length;
-  const stat='共 '+DB.todos.length+' 项 · 待办 '+(DB.todos.length-done)+' · 已完成 '+done;
+  const open=DB.todos.filter(t=>!t.done).length,done=DB.todos.length-open;
+  const od=DB.todos.filter(t=>!t.done&&t.date<tdToday()).length;
+  const stat='共 '+DB.todos.length+' 项 · 待办 '+open+' · 已完成 '+done+(od?' · 逾期 '+od:'');
   ['todoModalStat','todoPageStat'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=stat});
   renderTodoFab();
   if(typeof renderDash==='function'&&!document.getElementById('view-dash').classList.contains('hidden'))renderDash();
 }
-function showTodoForm(bid,col){document.querySelectorAll('.todo-form.open').forEach(f=>f.classList.remove('open'));const f=document.getElementById(bid+'-form-'+col);f.classList.add('open');document.getElementById(bid+'-txt-'+col).focus()}
-function hideTodoForm(bid,col){document.getElementById(bid+'-form-'+col).classList.remove('open')}
-function submitTodo(bid,col){
-  const txt=document.getElementById(bid+'-txt-'+col).value.trim();
-  const ddl=document.getElementById(bid+'-ddl-'+col).value;
-  const meta=TODO_COLS.find(c=>c.key===col);
-  if(!txt){toast('请输入待办内容');return}
-  if(meta.needDdl&&!ddl){toast('请为「'+meta.name+'」选择 DDL 时间');return}
-  DB.todos.push({id:uid(),col:col,title:txt,ddl:ddl||'',done:false,createdAt:Date.now()});
-  save();renderTodos();toast('已添加');
+function tdNav(dir){tdMonth+=dir;if(tdMonth<0){tdMonth=11;tdYear--}if(tdMonth>11){tdMonth=0;tdYear++}renderTodos()}
+function tdGoToday(){const n=new Date();tdYear=n.getFullYear();tdMonth=n.getMonth();tdSelDate=tdToday();tdEditingId=null;renderTodos()}
+function tdSelect(ds){
+  tdSelDate=ds;tdEditingId=null;
+  const d=new Date(ds+'T00:00:00');
+  if(d.getMonth()!==tdMonth||d.getFullYear()!==tdYear){tdYear=d.getFullYear();tdMonth=d.getMonth()}
+  renderTodos();
 }
-function toggleTodo(id){const t=DB.todos.find(x=>x.id===id);if(!t)return;t.done=!t.done;save();renderTodos()}
-function delTodo(id){DB.todos=DB.todos.filter(x=>x.id!==id);save();renderTodos()}
-function clearDoneTodo(col){const n=DB.todos.filter(t=>t.col===col&&t.done).length;if(!n){toast('没有已完成事项');return}DB.todos=DB.todos.filter(t=>!(t.col===col&&t.done));save();renderTodos();toast('已清除 '+n+' 项')}
+function tdAdd(bid){
+  const inp=document.getElementById(bid+'-title');
+  const title=inp.value.trim();
+  if(!title){toast('请输入待办内容');inp.focus();return}
+  DB.todos.push({id:uid(),title,date:tdSelDate,priority:document.getElementById(bid+'-pri').value,note:'',done:false,createdAt:Date.now(),doneAt:null});
+  inp.value='';save();renderTodos();toast('已添加');
+  const again=document.getElementById(bid+'-title');if(again)again.focus();
+}
+function toggleTodo(id){const t=DB.todos.find(x=>x.id===id);if(!t)return;t.done=!t.done;t.doneAt=t.done?Date.now():null;save();renderTodos()}
+function delTodo(id){DB.todos=DB.todos.filter(x=>x.id!==id);if(tdEditingId===id)tdEditingId=null;save();renderTodos()}
+function tdEdit(id){tdEditingId=id;renderTodos();const inp=document.getElementById('td-edit-'+id);if(inp){inp.focus();inp.select()}}
+function tdSaveEdit(id){
+  const inp=document.getElementById('td-edit-'+id);
+  const v=inp?inp.value.trim():'';
+  if(!v){toast('内容不能为空');return}
+  const t=DB.todos.find(x=>x.id===id);if(t)t.title=v;
+  tdEditingId=null;save();renderTodos();toast('已保存');
+}
+function tdCancelEdit(){tdEditingId=null;renderTodos()}
+function tdEditKey(e,id){if(e.key==='Enter')tdSaveEdit(id);else if(e.key==='Escape')tdCancelEdit()}
+function tdClearDone(){
+  const n=DB.todos.filter(t=>t.date===tdSelDate&&t.done).length;
+  if(!n){toast('没有已完成事项');return}
+  if(!confirm('确定清空该日 '+n+' 项已完成待办？'))return;
+  DB.todos=DB.todos.filter(t=>!(t.date===tdSelDate&&t.done));
+  save();renderTodos();toast('已清空 '+n+' 项');
+}
+function tdToggleDoneList(){tdDoneCollapsed=!tdDoneCollapsed;renderTodos()}
+/* 待办数据导入导出（仅待办模块；系统顶栏的导出仍为全量备份） */
+function tdDownload(name,content,mime){
+  const blob=new Blob([content],{type:mime});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+function exportTodoJson(){
+  const payload={app:'legalms-todo-calendar',version:1,exportedAt:new Date().toISOString(),todos:DB.todos};
+  tdDownload('待办事项备份_'+tdToday()+'.json',JSON.stringify(payload,null,2),'application/json');
+  toast('待办 JSON 已导出，可用于备份与导入');
+}
+function tdCsvCell(v){v=String(v==null?'':v);return'"'+v.replace(/"/g,'""')+'"'}
+function exportTodoCsv(){
+  if(!DB.todos.length){toast('暂无待办数据可导出');return}
+  const head=['标题','日期','优先级','状态','备注','创建时间','完成时间'];
+  const rows=[...DB.todos].sort((a,b)=>a.date.localeCompare(b.date)||(a.createdAt-b.createdAt)).map(t=>[
+    t.title,t.date,t.priority==='urgent'?'紧急':'一般',t.done?'已完成':'待办',
+    t.note||'',tdFmtTime(t.createdAt),t.done?tdFmtTime(t.doneAt):''
+  ]);
+  tdDownload('待办事项_'+tdToday()+'.csv','﻿'+[head].concat(rows).map(r=>r.map(tdCsvCell).join(',')).join('\r\n'),'text/csv;charset=utf-8');
+  toast('CSV 已导出，可直接用 Excel 打开');
+}
+function importTodoJson(){document.getElementById('todoImportFile').click()}
+function importTodoJsonFile(e){
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{
+    const data=JSON.parse(r.result);
+    const list=Array.isArray(data)?data:(data&&Array.isArray(data.todos)?data.todos:null);
+    if(!list)throw new Error('bad shape');
+    const clean=[];
+    list.forEach(t=>{
+      if(!t||typeof t.title!=='string'||!t.title.trim())return;
+      clean.push({id:typeof t.id==='string'?t.id:uid(),title:t.title.trim().slice(0,120),
+        date:/^\d{4}-\d{2}-\d{2}$/.test(t.date)?t.date:(t.ddl||tdToday()),
+        priority:t.priority==='urgent'?'urgent':'normal',
+        note:typeof t.note==='string'?t.note:'',done:!!t.done,
+        createdAt:typeof t.createdAt==='number'?t.createdAt:Date.now(),
+        doneAt:t.done?(typeof t.doneAt==='number'?t.doneAt:Date.now()):null});
+    });
+    if(DB.todos.length&&!confirm('当前已有 '+DB.todos.length+' 条待办，导入将【覆盖】现有待办（不影响其他模块数据），确定继续？'))return;
+    DB.todos=clean;save();renderTodos();toast('待办导入成功，共 '+clean.length+' 条');
+  }catch(err){toast('文件格式错误，请选择看板导出的 JSON 文件')}};
+  r.readAsText(f);
+}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('todoMask').classList.contains('hidden'))closeTodoModal()});
 /* 登录进入工作台后自动弹出（本次会话仅一次；上次最小化过则只显示悬浮按钮） */
 (function(){
@@ -1338,9 +1839,7 @@ function downloadBizMat(id){
 }
 function delBizMat(id){if(!confirm('确定删除该材料？'))return;curClient.materials=curClient.materials.filter(m=>m.id!==id);save();renderBizDetail();toast('已删除')}
 
-/* ==================== Excel 批量导入（印章 / 费用） ==================== */
-const SEAL_TYPES=['公章','合同章','人事专用章','财务章','发票章','法人章','项目专用章','其他'];
-const SEAL_FREQS=['高','中','低','基本不使用'];
+/* ==================== Excel 批量导入（费用） ==================== */
 function xlsxReady(){return typeof XLSX!=='undefined'}
 function readExcel(file,cb){
   const r=new FileReader();
@@ -1375,37 +1874,6 @@ function downloadXlsx(name,headers,rows){
   ws['!cols']=headers.map(h=>({wch:Math.max(14,String(h).length*2+8)}));
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
   XLSX.writeFile(wb,name);
-}
-/* ---- 印章批量导入 ---- */
-function importSeals(e){
-  const f=e.target.files[0];e.target.value='';if(!f)return;
-  if(!xlsxReady()){toast('Excel 组件未加载，请检查网络后刷新重试');return}
-  readExcel(f,rows=>{
-    if(rows.length<2){toast('表格为空或缺少表头');return}
-    const h=rows[0];
-    const iC=colIdx(h,['公司','公司名称']),iT=colIdx(h,['印章性质']),iH=colIdx(h,['印章现持有人','现持有人','持有人']),iD=colIdx(h,['交接时间']),iF=colIdx(h,['使用频率']);
-    if(iC<0){toast('未找到「公司」列，请先下载导入模板对照填写');return}
-    let ok=0,skip=0;
-    rows.slice(1).forEach(r=>{
-      const company=String(r[iC]||'').trim();
-      if(!company){skip++;return}
-      let type=String(iT>=0?r[iT]:'').trim();if(!SEAL_TYPES.includes(type))type='公章';
-      let freq=String(iF>=0?r[iF]:'').trim();if(!SEAL_FREQS.includes(freq))freq='中';
-      DB.seals.push({id:uid(),company,type,holder:String(iH>=0?r[iH]:'').trim()||'安子玥',handover:parseExcelDate(iD>=0?r[iD]:''),freq});
-      ok++;
-    });
-    save();renderSealTable();
-    toast(`导入完成：新增 ${ok} 枚印章，跳过 ${skip} 行`);
-  });
-}
-function downloadSealTemplate(){
-  if(!xlsxReady()){toast('Excel 组件未加载，请检查网络后刷新重试');return}
-  downloadXlsx('印章批量导入模板.xlsx',['公司','印章性质','印章现持有人','交接时间','使用频率'],[
-    ['示例置业有限公司','公章','安子玥','2026-01-15','高'],
-    ['示例置业有限公司','法人章','安子玥','2026-01-15','中'],
-    ['示例置业有限公司','项目专用章','张三','2026-03-01','低'],
-    ['示例科技有限公司','合同章','安子玥','2025-12-20','基本不使用']
-  ]);
 }
 /* ---- 费用批量导入 ---- */
 function importFees(e){
@@ -1470,12 +1938,14 @@ function downloadFeeTemplate(){
       <h3>📋 待办事项</h3>
       <span class="sub" id="todoModalStat" style="font-size:12.5px"></span>
       <span class="spacer"></span>
+      <button class="btn btn-sm" onclick="exportTodoCsv()">⬇ 导出CSV</button>
       <button class="todo-x" onclick="closeTodoModal()" title="最小化">×</button>
     </div>
-    <div class="todo-board" id="todoModalBoard"></div>
+    <div class="todo-board"><div class="td-wrap in-modal" id="todoModalBoard"></div></div>
   </div>
 </div>
 <button id="todoFab" class="todo-fab hidden" onclick="openTodoModal()" title="待办事项">📋<span class="badge" id="todoBadge"></span></button>
+<input type="file" id="todoImportFile" accept=".json" class="hidden" onchange="importTodoJsonFile(event)">
 
 <div id="view-todo" class="view hidden">
   <div class="topbar">
@@ -1485,11 +1955,363 @@ function downloadFeeTemplate(){
     <button class="btn btn-sm" onclick="openTodoModal()">⛶ 弹窗模式</button>
   </div>
   <div class="page">
-    <div class="page-head"><h2>📋 待办事项</h2><span class="sub" id="todoPageStat" style="font-size:13px"></span></div>
-    <div class="panel"><div style="padding:14px">
-      <div class="todo-board" id="todoPageBoard" style="height:calc(100vh - 215px)"></div>
-    </div></div>
+    <div class="page-head"><h2>📋 待办事项 · 日历看板</h2><span class="sub" id="todoPageStat" style="font-size:13px"></span>
+      <span style="flex:1"></span>
+      <button class="btn btn-sm" onclick="importTodoJson()">⬆ 导入JSON</button>
+      <button class="btn btn-sm" onclick="exportTodoJson()">⬇ 导出JSON</button>
+      <button class="btn btn-sm btn-primary" onclick="exportTodoCsv()">⬇ 导出CSV</button>
+    </div>
+    <div class="td-wrap" id="todoPageBoard"></div>
   </div>
 </div>
+<script>
+/* ==================== 备忘录双页签 ==================== */
+function setMemoTab(t){
+  document.getElementById('mtab-out').classList.toggle('on',t==='out');
+  document.getElementById('mtab-in').classList.toggle('on',t==='in');
+  document.getElementById('memoAddBtn').classList.toggle('hidden',t!=='out');
+  document.getElementById('memo-pad').classList.toggle('hidden',t!=='in');
+  if(t==='in'){
+    document.getElementById('memo-home').classList.add('hidden');
+    document.getElementById('memo-detail').classList.add('hidden');
+    document.getElementById('memo-crumb2').textContent='/ 对内便签';
+    document.getElementById('memoPadText').value=DB.memoPad||'';
+  }else{
+    document.getElementById('memo-pad').classList.add('hidden');
+    showMemoHome();
+  }
+}
+function saveMemoPad(){
+  DB.memoPad=document.getElementById('memoPadText').value;
+  save();
+  document.getElementById('memoPadSaved').textContent='已保存 · '+new Date().toLocaleString('zh-CN');
+  toast('便签已保存');
+}
+/* ==================== 待办日历联动案件安排 ==================== */
+function tdCaseDayHtml(ds){
+  const items=[];
+  (DB.cases||[]).forEach(c=>{(c.arrangements||[]).forEach(a=>{if(a.date===ds&&!a.done)items.push({c,a})})});
+  if(!items.length)return '';
+  return '<div class="list-sec"><div class="list-hd"><span class="dot" style="background:#cf5b5b"></span><b>案件安排</b><span class="n" style="background:rgba(207,91,91,.13);color:#b04444">'+items.length+'</span></div>'
+   +items.map(x=>'<div class="case-cal-item" onclick="go(\'lit\');openCase(\''+x.c.id+'\')"><span class="tag '+(x.a.type==='开庭'?'tag-red':x.a.type==='举证'?'tag-orange':'tag-blue')+'">'+esc(x.a.type)+'</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(x.a.title)+'</span><span class="sub" style="font-size:11.5px">'+esc(x.c.name)+'</span></div>').join('')+'</div>';
+}
+/* ==================== 诉讼：复盘与执行 ==================== */
+function litReview(c){
+  const pays=c.execPays||[];const paid=pays.reduce((s,x)=>s+Number(x.amount||0),0);
+  let html=`<div class="panel"><div class="panel-hd"><h3>诉讼策略与复盘</h3><span class="spacer"></span><button class="btn btn-sm btn-primary" onclick="saveCaseReview()">保存复盘</button></div>
+  <div class="panel-bd"><div class="frm-row">
+   <div class="field"><label>裁判结果</label><select id="rv-result">${['','胜诉','败诉','部分支持','调解结案','撤诉','其他'].map(r=>`<option value="${r}" ${c.result===r?'selected':''}>${r||'未结案 / 待定'}</option>`).join('')}</select></div>
+   <div class="field full"><label>复盘分析（胜诉 / 败诉原因、经验总结）</label><textarea id="rv-note" style="min-height:110px">${esc(c.resultNote||'')}</textarea></div></div>
+   <div class="info-block" style="margin-bottom:0"><h4>类案检索</h4><div style="display:flex;gap:10px;flex-wrap:wrap">
+     <a class="btn btn-sm" target="_blank" rel="noopener" href="https://wenshu.court.gov.cn">中国裁判文书网</a>
+     <a class="btn btn-sm" target="_blank" rel="noopener" href="https://rmfyalk.court.gov.cn">人民法院案例库</a>
+     <a class="btn btn-sm" target="_blank" rel="noopener" href="https://www.itslaw.com">无讼案例</a>
+   </div></div></div></div>`;
+  html+=`<div class="panel"><div class="panel-hd"><h3>执行跟踪</h3><span class="sub">判决后执行进展</span><span class="spacer"></span><button class="btn btn-sm btn-primary" onclick="execNoteModal()">＋ 进展记录</button></div>
+  <div class="panel-bd" style="padding:0"><table class="tbl"><colgroup><col style="width:16%"><col style="width:70%"><col style="width:14%"></colgroup><thead><tr><th>日期</th><th>进展内容</th><th>操作</th></tr></thead><tbody>`;
+  if(!(c.execNotes||[]).length)html+='<tr><td colspan="3"><div class="empty">暂无执行进展记录</div></td></tr>';
+  [...(c.execNotes||[])].sort((a,b)=>b.date.localeCompare(a.date)).forEach(n=>{
+    html+=`<tr><td>${esc(n.date)}</td><td>${esc(n.content)}</td><td><button class="btn btn-sm btn-danger" onclick="delExecNote('${n.id}')">删除</button></td></tr>`});
+  html+=`</tbody></table></div></div>
+  <div class="panel"><div class="panel-hd"><h3>回款登记</h3><span class="sub">累计回款 <b style="color:var(--green)">${money(paid)}</b> 元</span><span class="spacer"></span><button class="btn btn-sm btn-primary" onclick="execPayModal()">＋ 登记回款</button></div>
+  <div class="panel-bd" style="padding:0"><table class="tbl"><colgroup><col style="width:16%"><col style="width:20%"><col style="width:50%"><col style="width:14%"></colgroup><thead><tr><th>日期</th><th class="num">金额（元）</th><th>备注</th><th>操作</th></tr></thead><tbody>`;
+  if(!pays.length)html+='<tr><td colspan="4"><div class="empty">暂无回款记录</div></td></tr>';
+  [...pays].sort((a,b)=>b.date.localeCompare(a.date)).forEach(x=>{
+    html+=`<tr><td>${esc(x.date)}</td><td class="num">${money(x.amount)}</td><td>${esc(x.note)}</td><td><button class="btn btn-sm btn-danger" onclick="delExecPay('${x.id}')">删除</button></td></tr>`});
+  return html+'</tbody></table></div></div>';
+}
+function saveCaseReview(){curCase.result=val('rv-result');curCase.resultNote=val('rv-note');save();toast('复盘已保存')}
+function execNoteModal(){
+  openModal('新增执行进展',`<div class="frm-row"><div class="field"><label>日期 *</label><input id="en-date" type="date" value="${today()}"></div>
+  <div class="field full"><label>进展内容 *</label><textarea id="en-content" placeholder="如：已申请强制执行，法院已立案"></textarea></div></div>`,()=>{
+    const content=val('en-content');if(!content)return setErr('en-content','请填写进展内容');
+    curCase.execNotes.push({id:uid(),date:val('en-date')||today(),content});save();renderLitDetail();toast('已保存');return true;
+  });
+}
+function delExecNote(id){if(!confirm('确定删除该记录？'))return;curCase.execNotes=curCase.execNotes.filter(x=>x.id!==id);save();renderLitDetail();toast('已删除')}
+function execPayModal(){
+  openModal('登记回款',`<div class="frm-row"><div class="field"><label>日期 *</label><input id="ep-date" type="date" value="${today()}"></div>
+  <div class="field"><label>金额（元）*</label><input id="ep-amt" type="number" placeholder="0.00"></div>
+  <div class="field full"><label>备注</label><input id="ep-note" placeholder="如：首期执行款"></div></div>`,()=>{
+    const amt=parseFloat(val('ep-amt'));if(!amt)return setErr('ep-amt','请填写金额');
+    curCase.execPays.push({id:uid(),date:val('ep-date')||today(),amount:amt,note:val('ep-note')});save();renderLitDetail();toast('已登记');return true;
+  });
+}
+function delExecPay(id){if(!confirm('确定删除该回款记录？'))return;curCase.execPays=curCase.execPays.filter(x=>x.id!==id);save();renderLitDetail();toast('已删除')}
+/* ---- 案件日历 / 期限计算器 / 复盘统计 ---- */
+function openCaseCalModal(){
+  const rows=[];(DB.cases||[]).forEach(c=>(c.arrangements||[]).forEach(a=>{if(!a.done)rows.push({c,a})}));
+  rows.sort((x,y)=>x.a.date.localeCompare(y.a.date));
+  const tds=tdToday();
+  let html='<table class="tbl"><colgroup><col style="width:13%"><col style="width:9%"><col style="width:10%"><col style="width:24%"><col style="width:28%"><col style="width:16%"></colgroup><thead><tr><th>日期</th><th>时间</th><th>类型</th><th>案件</th><th>事项</th><th>地点</th></tr></thead><tbody>';
+  if(!rows.length)html+='<tr><td colspan="6"><div class="empty">暂无待办的案件安排，请在案件详情「相关安排」中添加</div></td></tr>';
+  rows.forEach(x=>{const past=x.a.date<tds;
+    html+=`<tr style="${past?'opacity:.5':''};cursor:pointer" onclick="closeModal();go('lit');openCase('${x.c.id}')"><td>${x.a.date}${x.a.date===tds?' <span class="tag tag-red">今天</span>':''}</td><td>${esc(x.a.time)}</td><td><span class="tag ${x.a.type==='开庭'?'tag-red':x.a.type==='举证'?'tag-orange':'tag-blue'}">${esc(x.a.type)}</span></td><td>${esc(x.c.name)}</td><td>${esc(x.a.title)}</td><td>${esc(x.a.location)}</td></tr>`});
+  openModal('案件日历 · 全部待办安排',html+'</tbody></table>',()=>true,'关闭');
+}
+function openDeadlineCalc(){
+  openModal('诉讼期限计算器',`<div class="frm-row">
+   <div class="field"><label>起始日期 *</label><input id="dl-date" type="date" value="${today()}"></div>
+   <div class="field"><label>期限类型</label><select id="dl-type">
+     <option value="15">答辩期 / 管辖权异议（收到起诉状副本之日起 15 日）</option>
+     <option value="30">举证期限（30 日）</option>
+     <option value="15">上诉期 · 判决（送达之日起 15 日）</option>
+     <option value="10">上诉期 · 裁定（送达之日起 10 日）</option>
+     <option value="2y">申请执行期限（法律文书生效之日起 2 年）</option>
+   </select></div>
+   <div class="field full"><button class="btn btn-primary" onclick="calcDeadline()">计算</button></div>
+   <div class="field full"><div class="info-block" style="margin:0"><h4>计算结果</h4><div class="txt" id="dl-result">选择起始日期与期限类型后点击计算</div></div></div></div>`,()=>true,'关闭');
+}
+function calcDeadline(){
+  const d0=val('dl-date');if(!d0)return setErr('dl-date','请选择起始日期');
+  const t=val('dl-type');const d=new Date(d0+'T00:00:00');let end,label;
+  if(t==='2y'){end=new Date(d);end.setFullYear(end.getFullYear()+2);label='2 年'}
+  else{const days=parseInt(t);end=new Date(d);end.setDate(end.getDate()+days);label=days+' 日'}
+  const es=tdFmt(end);const left=Math.ceil((end-new Date(tdToday()+'T00:00:00'))/864e5);
+  document.getElementById('dl-result').textContent='期限：'+label+'\n截止日期：'+es+'\n'+(left>=0?('距今还有 '+left+' 天'):('已过期 '+(-left)+' 天'));
+}
+function openCaseStats(){
+  const cases=DB.cases||[];
+  const st=['诉前','一审中','二审中','执行中','已结案'].map(s=>({s,n:cases.filter(c=>c.status===s).length}));
+  const mx=Math.max(1,...st.map(x=>x.n));
+  const rs=['胜诉','败诉','部分支持','调解结案','撤诉'].map(r=>({r,n:cases.filter(c=>c.result===r).length})).filter(x=>x.n);
+  const win=cases.filter(c=>c.result==='胜诉').length,lose=cases.filter(c=>c.result==='败诉').length,part=cases.filter(c=>c.result==='部分支持').length;
+  const rate=(win+lose+part)?Math.round(win/(win+lose+part)*100):null;
+  let html='<div class="info-block"><h4>案件状态分布（共 '+cases.length+' 件）</h4>'
+   +st.map(x=>'<div class="bar-row"><span class="lbl">'+x.s+'</span><div class="bar-track"><div class="bar-fill" style="width:'+Math.round(x.n/mx*100)+'%"></div></div><span class="val">'+x.n+' 件</span></div>').join('')+'</div>';
+  html+='<div class="info-block" style="margin:0"><h4>裁判结果统计</h4>'
+   +(rs.length?rs.map(x=>'<div class="bar-row"><span class="lbl">'+x.r+'</span><div class="bar-track"><div class="bar-fill" style="width:'+Math.round(x.n/Math.max(...rs.map(y=>y.n))*100)+'%;background:linear-gradient(90deg,#5ec2a0,#3d9d6e)"></div></div><span class="val">'+x.n+' 件</span></div>').join(''):'<div class="sub" style="font-size:13px">暂无已填写裁判结果的案件</div>')
+   +(rate!==null?('<div style="margin-top:10px;font-size:13px">胜诉率（不含调解/撤诉）：<b style="color:var(--primary-d)">'+rate+'%</b></div>'):'')+'</div>';
+  openModal('复盘统计',html,()=>true,'关闭');
+}
+/* ==================== 法律咨询工单 ==================== */
+function renderConsults(){
+  const list=(DB.consults||[]).slice().sort((a,b)=>b.time.localeCompare(a.time));
+  let html='<table class="tbl"><colgroup><col style="width:11%"><col style="width:12%"><col style="width:10%"><col style="width:29%"><col style="width:24%"><col style="width:8%"><col style="width:16%"></colgroup><thead><tr><th>时间</th><th>部门</th><th>提问人</th><th>问题</th><th>答复</th><th>状态</th><th>操作</th></tr></thead><tbody>';
+  if(!list.length)html+='<tr><td colspan="7"><div class="empty">暂无咨询工单，点右上角「新增咨询」创建</div></td></tr>';
+  list.forEach(q=>{
+    html+=`<tr><td>${esc(q.time)}</td><td>${esc(q.dept)}</td><td>${esc(q.asker)}</td><td class="ellipsis" title="${esc(q.question)}">${esc(q.question)}</td><td class="ellipsis" title="${esc(q.answer||'')}">${esc(q.answer||'—')}</td>
+    <td><span class="tag ${q.status==='待答复'?'tag-orange':'tag-green'}">${q.status}</span>${q.faq?' <span class="tag tag-blue">FAQ</span>':''}</td>
+    <td><button class="btn btn-sm" onclick="replyConsult('${q.id}')">答复</button> <button class="btn btn-sm" onclick="toggleFaq('${q.id}')">${q.faq?'移出FAQ':'归档FAQ'}</button> <button class="btn btn-sm btn-danger" onclick="delConsult('${q.id}')">删除</button></td></tr>`});
+  document.getElementById('consultWrap').innerHTML=html+'</tbody></table>';
+  const fq=(document.getElementById('faqQ').value||'').trim().toLowerCase();
+  const faqs=list.filter(q=>q.faq&&(!fq||q.question.toLowerCase().includes(fq)||(q.answer||'').toLowerCase().includes(fq)));
+  document.getElementById('faqWrap').innerHTML=faqs.length?faqs.map(q=>`<div class="info-block" style="margin-bottom:14px"><h4>问：${esc(q.question)}<span class="sub" style="font-weight:400">　—— ${esc(q.dept)} ${esc(q.asker)}</span></h4><div class="txt">${esc(q.answer)||'—'}</div></div>`).join(''):'<div class="empty">暂无 FAQ，答复工单后点「归档FAQ」沉淀到知识库</div>';
+}
+function openConsultModal(){
+  openModal('新增法律咨询',`<div class="frm-row">
+   <div class="field"><label>部门 *</label><input id="ct-dept" placeholder="如：招商部"></div>
+   <div class="field"><label>提问人 *</label><input id="ct-asker"></div>
+   <div class="field full"><label>问题描述 *</label><textarea id="ct-q"></textarea></div></div>`,()=>{
+    const dept=val('ct-dept'),asker=val('ct-asker'),question=val('ct-q');
+    if(!dept)return setErr('ct-dept','请填写部门');
+    if(!asker)return setErr('ct-asker','请填写提问人');
+    if(!question)return setErr('ct-q','请填写问题');
+    DB.consults.push({id:uid(),time:today(),dept,asker,question,answer:'',answerer:'',answerTime:'',status:'待答复',faq:false});
+    save();renderConsults();toast('已提交');return true;
+  });
+}
+function replyConsult(id){
+  const q=DB.consults.find(x=>x.id===id);if(!q)return;
+  openModal('答复咨询',`<div class="notice-bar">问：${esc(q.question)}</div><div class="frm-row">
+   <div class="field full"><label>答复内容 *</label><textarea id="ct-a">${esc(q.answer||'')}</textarea></div></div>`,()=>{
+    const a=val('ct-a');if(!a)return setErr('ct-a','请填写答复内容');
+    q.answer=a;q.answerer=sessionStorage.getItem('lms_user')||'法务';q.answerTime=today();q.status='已答复';
+    save();renderConsults();toast('已答复');return true;
+  });
+}
+function toggleFaq(id){const q=DB.consults.find(x=>x.id===id);if(!q)return;q.faq=!q.faq;save();renderConsults();toast(q.faq?'已归档到 FAQ':'已移出 FAQ')}
+function delConsult(id){if(!confirm('确定删除该工单？'))return;DB.consults=DB.consults.filter(x=>x.id!==id);save();renderConsults();toast('已删除')}
+/* ==================== 文书库（文件上传） ==================== */
+function renderDocs(){
+  const wrap=document.getElementById('docsWrap');if(!wrap)return;
+  const list=(DB.docFiles||[]).slice().sort((a,b)=>(b.time||'').localeCompare(a.time||''));
+  const cnt=document.getElementById('docCount');if(cnt)cnt.textContent='共 '+list.length+' 个文件';
+  let html='<table class="tbl"><colgroup><col style="width:6%"><col style="width:34%"><col style="width:12%"><col style="width:12%"><col style="width:18%"><col style="width:18%"></colgroup><thead><tr><th></th><th>文件名称</th><th>格式</th><th class="num">大小</th><th>上传时间</th><th>操作</th></tr></thead><tbody>';
+  if(!list.length)html+='<tr><td colspan="6"><div class="empty">暂无文书，点击上方区域上传</div></td></tr>';
+  list.forEach(f=>{html+=`<tr><td class="center">${fmtIcon(f.name)}</td><td>${esc(f.name)}</td><td><span class="tag tag-gray">.${esc(f.ext)}</span></td><td class="num">${esc(f.size)}</td><td>${esc(f.time)}</td><td>${f.data?`<button class="btn btn-sm" onclick="downloadDocFile('${f.id}')">⬇ 下载</button> `:'<span class="sub" style="font-size:12px">（仅登记）</span> '}<button class="btn btn-sm" onclick="editDocFile('${f.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delDocFile('${f.id}')">删除</button></td></tr>`});
+  wrap.innerHTML=html+'</tbody></table>';
+  bindDocDropzone();
+}
+function bindDocDropzone(){
+  const z=document.getElementById('docUpzone'),f=document.getElementById('docFileInput');
+  if(!z||z._bound)return;z._bound=true;
+  z.onclick=()=>f.click();
+  z.ondragover=e=>{e.preventDefault();z.classList.add('drag')};
+  z.ondragleave=()=>z.classList.remove('drag');
+  z.ondrop=e=>{e.preventDefault();z.classList.remove('drag');handleDocFiles(e.dataTransfer.files)};
+  f.onchange=()=>handleDocFiles(f.files);
+}
+function handleDocFiles(files){
+  const f=document.getElementById('docFileInput');
+  [...files].forEach(file=>{
+    const ext=file.name.split('.').pop().toLowerCase();
+    if(!FMT_OK.includes(ext)){toast('不支持的格式：'+file.name);return}
+    const rec={id:uid(),name:file.name,ext,time:new Date().toLocaleString('zh-CN'),size:(file.size/1024).toFixed(1)+' KB',data:null};
+    const done=()=>{DB.docFiles.push(rec);save();renderDocs();toast('已上传：'+file.name)};
+    if(file.size<=3*1024*1024){
+      const r=new FileReader();r.onload=()=>{rec.data=r.result;done()};r.readAsDataURL(file);
+    }else{rec.size=(file.size/1048576).toFixed(2)+' MB';done();}
+  });
+  if(f)f.value='';
+}
+function downloadDocFile(id){
+  const m=(DB.docFiles||[]).find(x=>x.id===id);if(!m||!m.data)return;
+  const a=document.createElement('a');a.href=m.data;a.download=m.name;a.click();
+}
+function editDocFile(id){
+  const m=(DB.docFiles||[]).find(x=>x.id===id);if(!m)return;
+  openModal('编辑文书信息',`<div class="frm-row">
+   <div class="field full"><label>文件名称 *</label><input id="df-name" value="${esc(m.name)}"></div>
+   <div class="field full"><label>上传时间</label><input id="df-time" value="${esc(m.time)}" placeholder="如：2026/11/3 10:30:00"></div></div>`,()=>{
+    const name=val('df-name');if(!name)return setErr('df-name','请填写文件名称');
+    m.name=name;const t=val('df-time');if(t)m.time=t;
+    save();renderDocs();toast('已保存');return true;
+  });
+}
+function delDocFile(id){if(!confirm('确定删除该文书文件？'))return;DB.docFiles=DB.docFiles.filter(x=>x.id!==id);save();renderDocs();toast('已删除')}
+/* ==================== 数据报表 ==================== */
+function renderReport(){
+  const w=document.getElementById('reportWrap');if(!w)return;
+  w.innerHTML='<div class="page-head"><h2>法务驾驶舱</h2><span class="sub">数据实时取自本系统各模块</span></div>'+buildReportHTML();
+}
+/* 驾驶舱实时刷新：任何数据保存后立即刷新工作台；每 60 秒自动刷新一次 */
+function liveRefreshDash(){
+  const dash=document.getElementById('view-dash');
+  if(!dash||dash.classList.contains('hidden'))return;
+  if(document.querySelector('.modal-mask'))return; /* 弹窗打开时暂不刷新，避免打断操作 */
+  renderDash();
+}
+setInterval(liveRefreshDash,60000);
+/* 工作台置顶驾驶舱（精简版）：消息列表、商办客户、待办完成率、案件状态饼图、费用横向柱状图 */
+function buildDashCockpitHTML(){
+  const cases=DB.cases||[];
+  const todoAll=(DB.todos||[]).length,todoDone=(DB.todos||[]).filter(t=>t.done).length;
+  let html='<div class="panel" style="margin-bottom:16px"><div class="panel-hd"><h3>消息列表</h3><span class="sub">案件日程 · 待答复工单 · 近期待办 · 最新备忘</span><span style="flex:1"></span><span class="sub" style="font-size:11.5px">实时更新 · 每分钟自动刷新</span></div><div class="panel-bd" style="display:flex;flex-direction:column;gap:8px">'+buildMsgHTML()+'</div></div>'
+    +'<div class="rep-cards" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">'
+    +'<div class="rep-card"><div class="k">商办客户</div><div class="v">'+(DB.clients||[]).length+' 家</div></div>'
+    +'<div class="rep-card"><div class="k">待办完成率</div><div class="v">'+(todoAll?Math.round(todoDone/todoAll*100):100)+'%</div></div>'
+    +'</div>';
+  const STATUSES=['诉前','一审中','二审中','执行中','已结案'];
+  const colors=['#8a8de6','#6a6fd6','#5ec2a0','#e0b35c','#9aa0c3'];
+  const counts=STATUSES.map(st=>cases.filter(c=>c.status===st).length);
+  const tot=counts.reduce((a,b)=>a+b,0)||1;
+  const R=52,CIRC=2*Math.PI*R;let off=0,segs='';
+  counts.forEach((n,i)=>{if(!n)return;const len=n/tot*CIRC;segs+='<circle r="'+R+'" cx="70" cy="70" fill="none" stroke="'+colors[i]+'" stroke-width="22" stroke-dasharray="'+len.toFixed(1)+' '+(CIRC-len).toFixed(1)+'" stroke-dashoffset="'+(-off).toFixed(1)+'" transform="rotate(-90 70 70)"/>';off+=len});
+  const donut='<svg width="140" height="140" viewBox="0 0 140 140">'+(segs||'<circle r="52" cx="70" cy="70" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="22"/>')+'<text x="70" y="66" text-anchor="middle" font-size="20" font-weight="700" fill="#333644">'+cases.length+'</text><text x="70" y="86" text-anchor="middle" font-size="11" fill="#787b8c">案件总数</text></svg>'
+    +'<div class="donut-legend">'+STATUSES.map((st,i)=>'<div class="li"><span class="sw" style="background:'+colors[i]+'"></span>'+st+'　<b>'+counts[i]+'</b> 件</div>').join('')+'</div>';
+  const fees=DB.fees||{regular:[],service:[],casefee:[]};
+  const feeSum=k=>(fees[k]||[]).reduce((s2,x)=>s2+Number(x.amount||0),0);
+  const f1=feeSum('regular'),f2=feeSum('service'),f3=feeSum('casefee');
+  const fmax=Math.max(1,f1,f2,f3);
+  const bars=[['常法 / 坐班服务',f1],['常务 / 专项服务费',f2],['案件相关费用',f3]].map(x=>'<div class="bar-row"><span class="lbl">'+x[0]+'</span><div class="bar-track"><div class="bar-fill" style="width:'+Math.round(x[1]/fmax*100)+'%"></div></div><span class="val">'+money(x[1])+' 元</span></div>').join('');
+  html+='<div class="ck-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'
+    +'<div class="panel"><div class="panel-hd"><h3>案件状态分布</h3></div><div class="panel-bd"><div class="donut-wrap">'+donut+'</div></div></div>'
+    +'<div class="panel"><div class="panel-hd"><h3>费用支出构成</h3></div><div class="panel-bd">'+bars+'</div></div>'
+    +'</div>';
+  return html;
+}
+function buildReportHTML(){
+  const cases=DB.cases||[];const fees=DB.fees||{regular:[],service:[],casefee:[]};
+  const feeSum=k=>(fees[k]||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const f1=feeSum('regular'),f2=feeSum('service'),f3=feeSum('casefee');
+  const totalAmt=cases.reduce((s,c)=>s+Number(c.amount||0),0);
+  const todoAll=(DB.todos||[]).length,todoDone=(DB.todos||[]).filter(t=>t.done).length;
+  let html=`<div class="rep-cards">
+    <div class="rep-card"><div class="k">诉讼案件</div><div class="v">${cases.length} 件</div></div>
+    <div class="rep-card"><div class="k">涉案金额合计</div><div class="v">${money(totalAmt)} 元</div></div>
+    <div class="rep-card"><div class="k">法律费用支出</div><div class="v">${money(f1+f2+f3)} 元</div></div>
+    <div class="rep-card"><div class="k">商办客户</div><div class="v">${(DB.clients||[]).length} 家</div></div>
+    <div class="rep-card"><div class="k">待办完成率</div><div class="v">${todoAll?Math.round(todoDone/todoAll*100):100}%</div></div>
+  </div>
+  <div class="panel"><div class="panel-hd"><h3>案件状态分布</h3></div><div class="panel-bd"><div class="donut-wrap">`;
+  const STATUSES=['诉前','一审中','二审中','执行中','已结案'];
+  const colors=['#8a8de6','#6a6fd6','#5ec2a0','#e0b35c','#9aa0c3'];
+  const counts=STATUSES.map(s=>cases.filter(c=>c.status===s).length);
+  const tot=counts.reduce((a,b)=>a+b,0)||1;
+  const R=52,CIRC=2*Math.PI*R;let off=0,segs='';
+  counts.forEach((n,i)=>{if(!n)return;const len=n/tot*CIRC;segs+=`<circle r="${R}" cx="70" cy="70" fill="none" stroke="${colors[i]}" stroke-width="22" stroke-dasharray="${len.toFixed(1)} ${(CIRC-len).toFixed(1)}" stroke-dashoffset="${(-off).toFixed(1)}" transform="rotate(-90 70 70)"/>`;off+=len});
+  html+=`<svg width="140" height="140" viewBox="0 0 140 140">${segs||'<circle r="52" cx="70" cy="70" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="22"/>'}<text x="70" y="66" text-anchor="middle" font-size="20" font-weight="700" fill="#333644">${cases.length}</text><text x="70" y="86" text-anchor="middle" font-size="11" fill="#787b8c">案件总数</text></svg>
+  <div class="donut-legend">${STATUSES.map((s,i)=>`<div class="li"><span class="sw" style="background:${colors[i]}"></span>${s}　<b>${counts[i]}</b> 件</div>`).join('')}</div>
+  </div></div></div>
+  <div class="panel"><div class="panel-hd"><h3>费用支出构成</h3></div><div class="panel-bd">`;
+  const fmax=Math.max(1,f1,f2,f3);
+  html+=[['常法 / 坐班服务',f1],['常务 / 专项服务费',f2],['案件相关费用',f3]].map(x=>`<div class="bar-row"><span class="lbl">${x[0]}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(x[1]/fmax*100)}%"></div></div><span class="val">${money(x[1])} 元</span></div>`).join('');
+  html+=`</div></div>
+  <div class="panel"><div class="panel-hd"><h3>风险分布（按业务板块）</h3></div><div class="panel-bd" style="padding:0"><table class="tbl">
+  <colgroup><col style="width:20%"><col style="width:16%"><col style="width:16%"><col style="width:16%"><col style="width:16%"><col style="width:16%"></colgroup>
+  <thead><tr><th>业务板块</th><th class="num">客户/模块</th><th class="num">诉讼案件</th><th class="num">涉案金额（元）</th><th class="num">进行中</th><th>风险等级</th></tr></thead><tbody>`;
+  const fpMods=p=>(DB.fuping[p]||[]).length;
+  const doing=cases.filter(c=>['诉前','一审中','二审中','执行中'].includes(c.status)).length;
+  const lvl=n=>n===0?'<span class="tag tag-green">低</span>':n<=2?'<span class="tag tag-orange">中</span>':'<span class="tag tag-red">高</span>';
+  html+=`<tr><td>商办租赁</td><td class="num">${(DB.clients||[]).length} 家</td><td class="num">${cases.length} 件</td><td class="num">${money(totalAmt)}</td><td class="num">${doing} 件</td><td>${lvl(doing)}</td></tr>
+  <tr><td>富平99 · 2769地块</td><td class="num">${fpMods('2769')} 个模块</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>${lvl(0)}</td></tr>
+  <tr><td>富平99 · 2779地块</td><td class="num">${fpMods('2779')} 个模块</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>${lvl(0)}</td></tr>`;
+  html+='</tbody></table></div></div>';
+  return html;
+}
+function exportAnnualReport(){
+  const y=new Date().getFullYear();const cases=DB.cases||[];const fees=DB.fees||{regular:[],service:[],casefee:[]};
+  const feeSum=k=>(fees[k]||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const todoAll=(DB.todos||[]).length,todoDone=(DB.todos||[]).filter(t=>t.done).length;
+  const st=['诉前','一审中','二审中','执行中','已结案'].map(s=>s+'：'+cases.filter(c=>c.status===s).length+' 件').join('；');
+  const L=[];
+  L.push('# '+y+' 年度法务工作报告','','生成时间：'+new Date().toLocaleString('zh-CN'),'');
+  L.push('## 一、诉讼案件管理','','- 案件总数：'+cases.length+' 件（'+st+'）','- 涉案金额合计：'+money(cases.reduce((s,c)=>s+Number(c.amount||0),0))+' 元');
+  const win=cases.filter(c=>c.result==='胜诉').length,lose=cases.filter(c=>c.result==='败诉').length;
+  if(win+lose)L.push('- 裁判结果：胜诉 '+win+' 件，败诉 '+lose+' 件');
+  L.push('','## 二、商办法律分析','','- 尚未进入诉讼客户：'+(DB.clients||[]).length+' 家');
+  L.push('','## 三、法律费用','','- 常法/坐班服务：'+money(feeSum('regular'))+' 元','- 常务/专项服务费：'+money(feeSum('service'))+' 元','- 案件相关费用：'+money(feeSum('casefee'))+' 元');
+  L.push('','## 四、日常法务运营','','- 待办事项：共 '+todoAll+' 项，完成 '+todoDone+' 项（完成率 '+(todoAll?Math.round(todoDone/todoAll*100):100)+'%）','- 法律咨询工单：'+(DB.consults||[]).length+' 件（FAQ 归档 '+(DB.consults||[]).filter(q=>q.faq).length+' 条）','- 备忘录：'+(DB.memos||[]).length+' 个');
+  L.push('','## 五、富平99项目','','- 2769地块：'+(DB.fuping['2769']||[]).length+' 个模块；- 2779地块：'+(DB.fuping['2779']||[]).length+' 个模块');
+  const blob=new Blob([L.join('\n')],{type:'text/markdown;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=y+'年度法务工作报告.md';a.click();
+  toast('年度报告已导出');
+}
+/* ==================== 权限管理（多角色） ==================== */
+function curRole(){const em=sessionStorage.getItem('lms_user')||'';return (DB.roles&&DB.roles[em])||'管理员'}
+function applyRole(){
+  if(!DB)return;
+  const r=curRole();
+  document.body.classList.toggle('ro',r==='只读访客');
+  const nb=document.getElementById('navRoleBtn');if(nb)nb.classList.toggle('hidden',r!=='管理员');
+  const who=document.getElementById('whoName');
+  if(who)who.innerHTML='<span style="overflow:hidden;text-overflow:ellipsis">'+'👤 '+esc(sessionStorage.getItem('lms_user')||'')+'</span>'+(r==='只读访客'?'<span class="ro-badge" style="flex:none">只读</span>':'');
+  if(who)who.style.display='flex';if(who){who.style.alignItems='center';who.style.gap='5px'}
+}
+function openRoleModal(){
+  if(curRole()!=='管理员'){toast('仅管理员可管理权限');return}
+  const rows=Object.entries(DB.roles||{}).map(([em,r])=>`<tr><td>${esc(em)}</td><td><span class="tag ${r==='管理员'?'tag-blue':r==='法务专员'?'tag-green':'tag-orange'}">${esc(r)}</span></td><td><button class="btn btn-sm btn-danger" onclick="delRole('${em}')">移除</button></td></tr>`).join('');
+  openModal('权限管理',`<div class="notice-bar">角色说明：<b>管理员</b> 可管理权限与全部数据；<b>法务专员</b> 可编辑业务数据；<b>只读访客</b> 仅可查看。未登记的账号默认为管理员。</div>
+  <table class="tbl"><thead><tr><th>账号邮箱</th><th>角色</th><th>操作</th></tr></thead><tbody>${rows||'<tr><td colspan="3"><div class="empty">暂无登记，所有账号均为管理员</div></td></tr>'}</tbody></table>
+  <div class="frm-row" style="margin-top:16px">
+   <div class="field"><label>账号邮箱</label><input id="rl-email" placeholder="user@example.com"></div>
+   <div class="field"><label>角色</label><select id="rl-role"><option>法务专员</option><option>只读访客</option><option>管理员</option></select></div></div>
+  <button class="btn btn-primary" onclick="addRole()">＋ 添加 / 更新角色</button>`,()=>true,'关闭');
+}
+function addRole(){
+  const em=val('rl-email');if(!em||!em.includes('@'))return setErr('rl-email','请填写有效邮箱');
+  DB.roles[em]=val('rl-role');save();closeModal();openRoleModal();toast('角色已保存，该账号下次进入系统时生效');
+}
+function delRole(em){delete DB.roles[em];save();closeModal();openRoleModal();toast('已移除')}
+/* 只读访客点击拦截 */
+document.addEventListener('click',e=>{
+  if(!document.body.classList.contains('ro'))return;
+  const el=e.target.closest('[onclick]');if(!el)return;
+  const oc=el.getAttribute('onclick')||'';
+  const allow=/^(go\(|backPrev|tdSelect|tdNav|tdGoToday|tdToggleDoneList|openCase\(|openClient\(|openPlot|openFpMod|openMemoBoard|litTab|setMemoTab|exportData|tdDownload|exportTodo|openCaseCalModal|openDeadlineCalc|openCaseStats|openTodoModal|downloadDocFile|downloadFpMat|downloadMat|downloadBizMat|doLogout|openRoleModal|openSuggest|renderReport|exportAnnualReport|document\.getElementById|toast\(|calcDeadline)/;
+  if(!allow.test(oc)){e.stopPropagation();e.preventDefault();toast('只读账号无编辑权限')}
+},true);
+/* ==================== 系统改进建议 ==================== */
+function openSuggest(){
+  const rows=(DB.suggestions||[]).slice().reverse().slice(0,5).map(s=>`<div class="sub" style="font-size:12px;padding:7px 0;border-bottom:1px dashed var(--line)">[${esc(s.time)}] ${esc(s.user)}：${esc(s.text)}</div>`).join('');
+  openModal('系统改进建议',`<div class="field"><label>您的建议 *</label><textarea id="sg-text" placeholder="希望增加或改进的功能、使用中的问题…"></textarea></div>
+  ${rows?('<div class="info-block" style="margin:0"><h4>最近提交</h4>'+rows+'</div>'):''}`,()=>{
+    const t=val('sg-text');if(!t)return setErr('sg-text','请填写建议内容');
+    DB.suggestions.push({id:uid(),time:today(),user:sessionStorage.getItem('lms_user')||'匿名',text:t});
+    save();toast('感谢反馈，建议已记录');return true;
+  },'提交建议');
+}
+</script>
 </body>
 </html>
