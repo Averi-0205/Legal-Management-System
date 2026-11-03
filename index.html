@@ -324,7 +324,7 @@ table.tbl tbody tr:hover{background:rgba(255,255,255,0.3)}
 .memo-pad-ta{width:100%;min-height:380px;border:1px solid var(--glass-line);border-radius:16px;background:rgba(255,255,255,.45);padding:16px;font-size:14.5px;line-height:1.9;font-family:inherit;color:var(--text);resize:vertical}
 .memo-pad-ta:focus{outline:none;border-color:rgba(106,111,214,.6);box-shadow:0 0 0 4px rgba(106,111,214,.12);background:rgba(255,255,255,.7)}
 #g9body{max-height:0;overflow:hidden;transition:max-height .35s ease}
-#g9body.open{max-height:420px}
+#g9body.open{max-height:560px}
 .g9-head{cursor:pointer;user-select:none}
 .g9-head .sub{font-weight:400}
 .mk-case{background:rgba(207,91,91,.12);color:#b04444;border:1px solid rgba(207,91,91,.25)}
@@ -351,6 +351,13 @@ body.ro .todo-check{pointer-events:none}
 .ro-badge{font-size:11px;background:rgba(201,138,45,.15);color:#a56f22;border-radius:999px;padding:2px 9px;margin-left:8px}
 @media(max-width:1280px){.rep-cards{grid-template-columns:repeat(3,1fr)}.ck-grid{grid-template-columns:1fr!important}}
 @media(max-width:820px){.rep-cards{grid-template-columns:repeat(2,1fr)}}
+
+.modal:has(.pv-box){max-width:960px;width:94vw}
+.pv-box iframe{width:100%;height:62vh;border:none;border-radius:12px;background:#fff}
+.pv-box img{max-width:100%;max-height:62vh;border-radius:12px;display:block;margin:0 auto}
+.pv-xls{max-height:62vh;overflow:auto;background:rgba(255,255,255,.6);border-radius:12px;padding:10px}
+.pv-xls table{border-collapse:collapse;font-size:12.5px}
+.pv-xls td,.pv-xls th{border:1px solid rgba(120,123,140,.25);padding:4px 10px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -439,6 +446,8 @@ body.ro .todo-check{pointer-events:none}
           <button class="g9" onclick="doLogout()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h5.5v16H14"/><path d="M3.5 12h10"/><path d="M10 8.5 6 12l4 4"/></svg>退出登录</button>
           <button class="g9" onclick="doLogout()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 3.5 7.5 7 11"/><path d="M3.5 7.5H17"/><path d="M17 13l3.5 3.5L17 20"/><path d="M20.5 16.5H7"/></svg>切换账号</button>
           <button class="g9" onclick="openSuggest()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 1 3.6 10.8c-.8.6-1.1 1.3-1.1 2.2h-5c0-.9-.3-1.6-1.1-2.2A6 6 0 0 1 12 3z"/></svg>改进建议</button>
+          <button class="g9" onclick="openAccountModal()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="14" r="4.5"/><path d="M11.2 10.8 20 2.5"/><path d="M16 6l3 3M13.5 8.5l2.5 2.5"/></svg>修改用户名及密码</button>
+          <button class="g9" onclick="toast('当前云端数据占用：'+cloudSizeText())" title="数据在 Supabase 云端的实时占用"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="7" ry="2.8"/><path d="M5 5.5v13c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8v-13"/><path d="M5 12c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8"/></svg><span style="font-size:11px;line-height:1.35">云端用量<br><b id="cloudSize">—</b></span></button>
         </div>
         <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
       </div>
@@ -812,6 +821,7 @@ function renderDash(){
   const setC=(id,txt)=>{const el=document.getElementById(id);if(el)el.textContent=txt};
   setC('cnt-consult','待答复 '+(DB.consults||[]).filter(q=>q.status==='待答复').length+' 件 · FAQ '+(DB.consults||[]).filter(q=>q.faq).length+' 条');
   setC('cnt-docs','文书 '+(DB.docFiles||[]).length+' 个');
+  setC('cloudSize',cloudSizeText());
   renderDashMsg();
   const dc=document.getElementById('dashCockpit');
   if(dc&&typeof buildDashCockpitHTML==='function')dc.innerHTML='<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap"><h3 style="margin:0;font-size:15.5px">📊 法务驾驶舱</h3><span class="sub" style="font-size:12px">数据实时取自各模块</span><span style="flex:1"></span><span class="mini-link" onclick="go(\'report\')">完整报表 →</span></div>'+buildDashCockpitHTML();
@@ -828,16 +838,28 @@ function buildMsgHTML(){
   });
   const pendingC=(DB.consults||[]).filter(q=>q.status==='待答复');
   if(pendingC.length)html+=`<div class="msg-item" onclick="go('consult')"><span class="d">${pendingC[0].time}</span><span class="t">有 ${pendingC.length} 件法律咨询待答复</span><span class="tag tag-blue">工单</span></div>`;
-  (DB.todos||[]).filter(t=>!t.done).sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999')).slice(0,4).forEach(t=>{
-    const od=t.date&&t.date<todayS;
-    html+=`<div class="msg-item${od?' od':''}" onclick="go('todo');tdSelect('${t.date||todayS}')"><span class="d">${t.date||'未定'}</span><span class="t">${esc(t.title)}</span>${od?'<span class="tag tag-red">逾期</span>':''}</div>`;
+  (DB.todos||[]).filter(t=>!t.done||(t.doneAt&&tdFmt(new Date(t.doneAt))===todayS))
+    .sort((a,b)=>((a.done?1:0)-(b.done?1:0))||(a.date||'9999').localeCompare(b.date||'9999')).forEach(t=>{
+    const od=!t.done&&t.date&&t.date<todayS;
+    html+=`<div class="msg-item${od?' od':''}" onclick="go('todo');tdSelect('${t.date||todayS}')"><span class="d">${t.date||'未定'}</span><span class="t" style="${t.done?'text-decoration:line-through;opacity:.6':''}">${esc(t.title)}</span>${t.done?'<span class="tag tag-green">今日完成</span>':(od?'<span class="tag tag-red">逾期</span>':'')}</div>`;
   });
-  (DB.memos||[]).flatMap(m=>m.records.map(r=>({time:r.time,content:r.content,who:m.toWho,mid:m.id}))).sort((a,b)=>b.time.localeCompare(a.time)).slice(0,1).forEach(r=>{
+  (DB.memos||[]).flatMap(m=>m.records.map(r=>({time:r.time,content:r.content,who:m.toWho,mid:m.id}))).filter(r=>r.time===todayS).slice(0,3).forEach(r=>{
     html+=`<div class="msg-item" onclick="go('memo')"><span class="d">${r.time}</span><span class="t">致 ${esc(r.who)}：${esc(r.content)}</span><span class="tag tag-gray">备忘</span></div>`;
   });
   return html||'<div class="msg-none">暂无消息，工作已全部处理完 ✓</div>';
 }
-function renderDashMsg(){const box=document.getElementById('msgList');if(!box)return;box.innerHTML=buildMsgHTML()}
+function buildLitMsgHTML(){
+  const todayS=tdToday();let html='';
+  const in14=new Date();in14.setDate(in14.getDate()+14);const d14=tdFmt(in14);
+  const caseItems=[];
+  (DB.cases||[]).forEach(c=>{(c.arrangements||[]).forEach(a=>{if(!a.done&&a.date&&a.date>=todayS&&a.date<=d14)caseItems.push({c,a,od:false})})});
+  (DB.cases||[]).forEach(c=>{(c.arrangements||[]).forEach(a=>{if(!a.done&&a.date&&a.date<todayS)caseItems.push({c,a,od:true})})});
+  caseItems.sort((x,y)=>x.a.date.localeCompare(y.a.date)).forEach(x=>{
+    html+=`<div class="msg-item${x.od?' od':''}" onclick="go('lit');openCase('${x.c.id}')"><span class="d">${x.a.date}</span><span class="t">[${esc(x.a.type)}] ${esc(x.a.title)}</span><span class="tag ${x.od?'tag-orange':'tag-red'}">${x.od?'逾期':'案件'}</span></div>`;
+  });
+  return html||'<div class="msg-none">暂无诉讼相关消息</div>';
+}
+function renderDashMsg(){const box=document.getElementById('msgList');if(!box)return;box.innerHTML=buildLitMsgHTML()}
 /* 全局搜索 */
 function dashSearch(q){
   const box=document.getElementById('gsDrop');
@@ -1010,7 +1032,7 @@ function litMaterial(c){
   if(!c.materials.length)html+='<div class="empty">暂无案件材料</div>';
   else{
     html+='<table class="tbl"><colgroup><col style="width:6%"><col style="width:34%"><col style="width:12%"><col style="width:12%"><col style="width:16%"><col style="width:20%"></colgroup><thead><tr><th></th><th>文件名</th><th>格式</th><th class="num">大小</th><th>上传时间</th><th>操作</th></tr></thead><tbody>';
-    c.materials.forEach(m=>{html+=`<tr><td class="center">${fmtIcon(m.name)}</td><td>${esc(m.name)}</td><td><span class="tag tag-gray">.${esc(m.ext)}</span></td><td class="num">${m.size}</td><td>${esc(m.time)}</td><td>${m.data?`<button class="btn btn-sm" onclick="downloadMat('${m.id}')">⬇ 下载</button> `:'<span class="sub" style="font-size:12px">（仅登记）</span> '}<button class="btn btn-sm btn-danger" onclick="delMat('${m.id}')">删除</button></td></tr>`});
+    c.materials.forEach(m=>{html+=`<tr><td class="center">${fmtIcon(m.name)}</td><td>${esc(m.name)}</td><td><span class="tag tag-gray">.${esc(m.ext)}</span></td><td class="num">${m.size}</td><td>${esc(m.time)}</td><td>${m.data?`<button class="btn btn-sm" onclick="previewMat('${m.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadMat('${m.id}')">⬇ 下载</button> `:'<span class="sub" style="font-size:12px">（仅登记）</span> '}<button class="btn btn-sm btn-danger" onclick="delMat('${m.id}')">删除</button></td></tr>`});
     html+='</tbody></table>';
   }
   return html+'</div></div></div>';
@@ -1036,6 +1058,37 @@ function bindDropzone(c){
     f.value='';
   }
 }
+/* ==================== 文件在线预览 ==================== */
+function dataUrlToBlobUrl(data){
+  const i=data.indexOf(',');const mime=(data.slice(5,i).match(/([^;]+)/)||['application/octet-stream'])[1];
+  const bin=atob(data.slice(i+1));const arr=new Uint8Array(bin.length);
+  for(let k=0;k<bin.length;k++)arr[k]=bin.charCodeAt(k);
+  return URL.createObjectURL(new Blob([arr],{type:mime}));
+}
+function previewData(name,data){
+  if(!data){toast('该文件仅登记，无内容可预览');return}
+  const ext=(name.split('.').pop()||'').toLowerCase();
+  let inner='',url=null;
+  if(['png','jpg','jpeg'].indexOf(ext)>-1){
+    inner='<img src="'+data+'">';
+  }else if(['pdf','txt','html','htm','eml'].indexOf(ext)>-1){
+    url=dataUrlToBlobUrl(data);
+    inner='<iframe src="'+url+'"'+(ext==='html'||ext==='htm'?' sandbox="allow-same-origin"':'')+'></iframe>';
+  }else if(['xls','xlsx'].indexOf(ext)>-1){
+    try{
+      const wb=XLSX.read(atob(data.slice(data.indexOf(',')+1)),{type:'binary'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      inner='<div class="sub" style="margin-bottom:8px;font-size:12px">工作表：'+esc(wb.SheetNames[0])+(wb.SheetNames.length>1?('（共 '+wb.SheetNames.length+' 个，仅预览首个）'):'')+'</div><div class="pv-xls">'+XLSX.utils.sheet_to_html(ws)+'</div>';
+    }catch(e){inner='<div class="empty">Excel 解析失败，请下载后查看</div>'}
+  }else{
+    inner='<div class="empty">该格式（.'+esc(ext)+'）暂不支持在线预览，请下载后查看<br><span class="sub" style="font-size:12px">支持预览：图片 / PDF / TXT / HTML / EML / Excel</span></div>';
+  }
+  openModal('预览：'+name,'<div class="pv-box">'+inner+'</div>',()=>{if(url)URL.revokeObjectURL(url);return true},'关闭');
+}
+function previewMat(id){const m=curCase&&curCase.materials.find(x=>x.id===id);if(m)previewData(m.name,m.data)}
+function previewFpMat(id){const m=curFpMod&&curFpMod.files&&curFpMod.files.find(x=>x.id===id);if(m)previewData(m.name,m.data)}
+function previewBizMat(id){const m=curClient&&curClient.materials.find(x=>x.id===id);if(m)previewData(m.name,m.data)}
+function previewDocFile(id){const m=(DB.docFiles||[]).find(x=>x.id===id);if(m)previewData(m.name,m.data)}
 function downloadMat(id){
   const m=curCase.materials.find(x=>x.id===id); if(!m||!m.data)return;
   const a=document.createElement('a');a.href=m.data;a.download=m.name;a.click();
@@ -1096,11 +1149,11 @@ let curClient=null;
 function renderBizList(){
   const kw=document.getElementById('bizSearch').value.trim();
   const list=DB.clients.filter(c=>!kw||c.name.includes(kw));
-  let html='<table class="tbl"><colgroup><col style="width:24%"><col style="width:12%"><col style="width:12%"><col class="num" style="width:11%"><col style="width:20%"><col style="width:14%"><col style="width:7%"></colgroup>';
+  let html='<table class="tbl"><colgroup><col style="width:24%"><col style="width:9%"><col style="width:9%"><col style="width:10%"><col style="width:24%"><col style="width:17%"><col style="width:7%"></colgroup>';
   html+='<thead><tr><th>客户名称</th><th>合同开始日期</th><th>合同结束日期</th><th class="num">月租金（元）</th><th>租金支付方式</th><th>履约情况</th><th>操作</th></tr></thead><tbody>';
   if(!list.length)html+='<tr><td colspan="7"><div class="empty">暂无客户，点击右上角「新增客户」创建</div></td></tr>';
   list.forEach(c=>{
-    html+=`<tr><td><span class="link" onclick="openClient('${c.id}')">${esc(c.name)}</span></td><td>${esc(c.contractStart)}</td><td>${esc(c.contractEnd)}</td><td class="num">${money(c.rent)}</td><td>${esc(c.payMethod)}</td><td class="ellipsis" title="${esc(c.performance)}">${esc(c.performance)}</td><td><button class="btn btn-sm" onclick="openClient('${c.id}')">查看</button></td></tr>`;
+    html+=`<tr><td><span class="link" onclick="openClient('${c.id}')">${esc(c.name)}</span></td><td style="white-space:nowrap">${esc(c.contractStart)}</td><td style="white-space:nowrap">${esc(c.contractEnd)}</td><td class="num">${money(c.rent)}</td><td>${esc(c.payMethod)}</td><td class="ellipsis" title="${esc(c.performance)}">${esc(c.performance)}</td><td><button class="btn btn-sm" onclick="openClient('${c.id}')">查看</button></td></tr>`;
   });
   document.getElementById('bizListWrap').innerHTML=html+'</tbody></table>';
 }
@@ -1529,7 +1582,7 @@ function fpFileSection(){
   if(!m.files.length)html+='<div class="empty">暂无文件，点击上方区域上传</div>';
   else{
     html+='<table class="tbl"><colgroup><col style="width:6%"><col style="width:36%"><col style="width:12%"><col style="width:12%"><col style="width:16%"><col style="width:18%"></colgroup><thead><tr><th></th><th>文件名</th><th>格式</th><th class="num">大小</th><th>上传时间</th><th>操作</th></tr></thead><tbody>';
-    m.files.forEach(f=>{html+=`<tr><td class="center">${fmtIcon(f.name)}</td><td>${esc(f.name)}</td><td><span class="tag tag-gray">.${esc(f.ext)}</span></td><td class="num">${f.size}</td><td>${esc(f.time)}</td><td>${f.data?`<button class="btn btn-sm" onclick="downloadFpMat('${f.id}')">⬇ 下载</button> `:'<span class="sub" style="font-size:12px">（仅登记）</span> '}<button class="btn btn-sm btn-danger" onclick="delFpMat('${f.id}')">删除</button></td></tr>`});
+    m.files.forEach(f=>{html+=`<tr><td class="center">${fmtIcon(f.name)}</td><td>${esc(f.name)}</td><td><span class="tag tag-gray">.${esc(f.ext)}</span></td><td class="num">${f.size}</td><td>${esc(f.time)}</td><td>${f.data?`<button class="btn btn-sm" onclick="previewFpMat('${f.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadFpMat('${f.id}')">⬇ 下载</button> `:'<span class="sub" style="font-size:12px">（仅登记）</span> '}<button class="btn btn-sm btn-danger" onclick="delFpMat('${f.id}')">删除</button></td></tr>`});
     html+='</tbody></table>';
   }
   return html+'</div>';
@@ -1807,7 +1860,7 @@ function bizMaterial(c){
   if(!c.materials.length)html+='<div class="empty">暂无相关材料</div>';
   else{
     html+='<table class="tbl"><colgroup><col style="width:6%"><col style="width:34%"><col style="width:12%"><col style="width:12%"><col style="width:16%"><col style="width:20%"></colgroup><thead><tr><th></th><th>文件名</th><th>格式</th><th class="num">大小</th><th>上传时间</th><th>操作</th></tr></thead><tbody>';
-    c.materials.forEach(m=>{html+=`<tr><td class="center">${fmtIcon(m.name)}</td><td>${esc(m.name)}</td><td><span class="tag tag-gray">.${esc(m.ext)}</span></td><td class="num">${m.size}</td><td>${esc(m.time)}</td><td>${m.data?`<button class="btn btn-sm" onclick="downloadBizMat('${m.id}')">⬇ 下载</button> `:'<span class="sub" style="font-size:12px">（仅登记）</span> '}<button class="btn btn-sm btn-danger" onclick="delBizMat('${m.id}')">删除</button></td></tr>`});
+    c.materials.forEach(m=>{html+=`<tr><td class="center">${fmtIcon(m.name)}</td><td>${esc(m.name)}</td><td><span class="tag tag-gray">.${esc(m.ext)}</span></td><td class="num">${m.size}</td><td>${esc(m.time)}</td><td>${m.data?`<button class="btn btn-sm" onclick="previewBizMat('${m.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadBizMat('${m.id}')">⬇ 下载</button> `:'<span class="sub" style="font-size:12px">（仅登记）</span> '}<button class="btn btn-sm btn-danger" onclick="delBizMat('${m.id}')">删除</button></td></tr>`});
     html+='</tbody></table>';
   }
   return html+'</div>';
@@ -2129,7 +2182,7 @@ function renderDocs(){
   const cnt=document.getElementById('docCount');if(cnt)cnt.textContent='共 '+list.length+' 个文件';
   let html='<table class="tbl"><colgroup><col style="width:6%"><col style="width:34%"><col style="width:12%"><col style="width:12%"><col style="width:18%"><col style="width:18%"></colgroup><thead><tr><th></th><th>文件名称</th><th>格式</th><th class="num">大小</th><th>上传时间</th><th>操作</th></tr></thead><tbody>';
   if(!list.length)html+='<tr><td colspan="6"><div class="empty">暂无文书，点击上方区域上传</div></td></tr>';
-  list.forEach(f=>{html+=`<tr><td class="center">${fmtIcon(f.name)}</td><td>${esc(f.name)}</td><td><span class="tag tag-gray">.${esc(f.ext)}</span></td><td class="num">${esc(f.size)}</td><td>${esc(f.time)}</td><td>${f.data?`<button class="btn btn-sm" onclick="downloadDocFile('${f.id}')">⬇ 下载</button> `:'<span class="sub" style="font-size:12px">（仅登记）</span> '}<button class="btn btn-sm" onclick="editDocFile('${f.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delDocFile('${f.id}')">删除</button></td></tr>`});
+  list.forEach(f=>{html+=`<tr><td class="center">${fmtIcon(f.name)}</td><td>${esc(f.name)}</td><td><span class="tag tag-gray">.${esc(f.ext)}</span></td><td class="num">${esc(f.size)}</td><td>${esc(f.time)}</td><td>${f.data?`<button class="btn btn-sm" onclick="previewDocFile('${f.id}')">👁 预览</button> <button class="btn btn-sm" onclick="downloadDocFile('${f.id}')">⬇ 下载</button> `:'<span class="sub" style="font-size:12px">（仅登记）</span> '}<button class="btn btn-sm" onclick="editDocFile('${f.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delDocFile('${f.id}')">删除</button></td></tr>`});
   wrap.innerHTML=html+'</tbody></table>';
   bindDocDropzone();
 }
@@ -2299,10 +2352,33 @@ document.addEventListener('click',e=>{
   if(!document.body.classList.contains('ro'))return;
   const el=e.target.closest('[onclick]');if(!el)return;
   const oc=el.getAttribute('onclick')||'';
-  const allow=/^(go\(|backPrev|tdSelect|tdNav|tdGoToday|tdToggleDoneList|openCase\(|openClient\(|openPlot|openFpMod|openMemoBoard|litTab|setMemoTab|exportData|tdDownload|exportTodo|openCaseCalModal|openDeadlineCalc|openCaseStats|openTodoModal|downloadDocFile|downloadFpMat|downloadMat|downloadBizMat|doLogout|openRoleModal|openSuggest|renderReport|exportAnnualReport|document\.getElementById|toast\(|calcDeadline)/;
+  const allow=/^(go\(|backPrev|tdSelect|tdNav|tdGoToday|tdToggleDoneList|openCase\(|openClient\(|openPlot|openFpMod|openMemoBoard|litTab|setMemoTab|exportData|tdDownload|exportTodo|openCaseCalModal|openDeadlineCalc|openCaseStats|openTodoModal|previewMat|previewFpMat|previewBizMat|previewDocFile|previewData|downloadDocFile|downloadFpMat|downloadMat|downloadBizMat|doLogout|openRoleModal|openSuggest|openAccountModal|cloudSizeText|renderReport|exportAnnualReport|document\.getElementById|toast\(|calcDeadline)/;
   if(!allow.test(oc)){e.stopPropagation();e.preventDefault();toast('只读账号无编辑权限')}
 },true);
 /* ==================== 系统改进建议 ==================== */
+/* 云端数据用量（Supabase 免费版数据库上限 500MB） */
+function cloudSizeText(){
+  const b=new Blob([JSON.stringify(DB||{})]).size;
+  return (b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(2)+' MB')+' / 500 MB';
+}
+/* 修改用户名及密码 */
+function openAccountModal(){
+  const cur=sessionStorage.getItem('lms_user')||'';
+  openModal('修改用户名及密码','<div class="notice-bar">当前账号：<b>'+esc(cur)+'</b><br>留空的项保持不变；修改用户名（邮箱）后，下次请用新邮箱登录。</div><div class="frm-row"><div class="field full"><label>新用户名（登录邮箱）</label><input id="ac-email" type="email" placeholder="留空则不修改"></div><div class="field full"><label>新密码（至少 6 位）</label><input id="ac-pw" type="password" placeholder="留空则不修改"></div></div>',()=>{
+    const em=val('ac-email').toLowerCase(),pw=document.getElementById('ac-pw').value;
+    if(!em&&!pw){toast('未做任何修改');return true}
+    if(em&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em))return setErr('ac-email','邮箱格式不正确');
+    if(pw&&pw.length<6)return setErr('ac-pw','密码至少 6 位');
+    const upd={};if(em)upd.email=em;if(pw)upd.password=pw;
+    sb.auth.updateUser(upd).then(({error})=>{
+      if(error){toast('修改失败：'+error.message);return}
+      if(em)sessionStorage.setItem('lms_user',em);
+      applyRole();
+      toast('修改成功'+(em?'，下次请用新邮箱登录':''));
+    });
+    return true;
+  });
+}
 function openSuggest(){
   const rows=(DB.suggestions||[]).slice().reverse().slice(0,5).map(s=>`<div class="sub" style="font-size:12px;padding:7px 0;border-bottom:1px dashed var(--line)">[${esc(s.time)}] ${esc(s.user)}：${esc(s.text)}</div>`).join('');
   openModal('系统改进建议',`<div class="field"><label>您的建议 *</label><textarea id="sg-text" placeholder="希望增加或改进的功能、使用中的问题…"></textarea></div>
