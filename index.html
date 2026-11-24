@@ -3201,11 +3201,11 @@ function renderTasks(){
   let html='<table class="tbl"><colgroup><col style="width:11%"><col style="width:24%"><col style="width:15%"><col style="width:10%"><col style="width:22%"><col style="width:18%"></colgroup><thead><tr><th>期限</th><th>任务内容</th><th>执行人</th><th>状态</th><th>工作成果</th><th>操作</th></tr></thead><tbody>';
   if(!list.length)html+='<tr><td colspan="6"><div class="empty">当前筛选下暂无任务</div></td></tr>';
   list.forEach(t=>{
-    const files=(t.attachments||[]).map((f,i)=>`<span class="file-chip"><b>${esc(f.name)}</b><button class="mini-link" onclick="previewTaskFile('${t.id}',${i})">预览</button></span>`).join('');
+    const files=(t.attachments||[]).map((f,i)=>`<div class="task-file-row"><span class="nm" title="${esc(f.name)}">${esc(f.name)}</span><button class="mini-link" onclick="previewTaskFile('${t.id}',${i})">预览</button></div>`).join('');
     const done=t.status==='done';
     const canComplete=t.assignee===currentEmail()&&!done;
     const canUpload=t.assignee===currentEmail()&&!done;
-    html+=`<tr><td style="white-space:nowrap">${esc(t.due||'—')}</td><td><b>${esc(plainText(t.title))}</b><div class="rich-text sub" style="font-size:12px;margin-top:4px">${richText(t.content||'')}</div></td><td style="word-break:break-all">${esc(t.assignee)}</td><td><span class="tag ${done?'tag-green':'tag-orange'}">${done?'已完成':'待办'}</span></td><td>${files||'<span class="sub">暂无成果</span>'}</td><td style="white-space:nowrap">${canUpload?`<button class="btn btn-sm" onclick="chooseTaskFiles('${t.id}')">上传成果</button> `:''}${canComplete?`<button class="btn btn-sm btn-primary" onclick="completeTask('${t.id}')">确认完成</button>`:''}</td></tr>`;
+    html+=`<tr><td style="white-space:nowrap">${esc(t.due||'—')}</td><td><b>${esc(plainText(t.title))}</b><div class="rich-text sub" style="font-size:12px;margin-top:4px">${richText(t.content||'')}</div></td><td style="word-break:break-all">${esc(t.assignee)}</td><td><span class="tag ${done?'tag-green':'tag-orange'}">${done?'已完成':'待办'}</span></td><td>${files?`<div class="task-file-list">${files}</div>`:'<span class="sub">暂无成果</span>'}</td><td style="white-space:nowrap">${canUpload?`<button class="btn btn-sm" onclick="chooseTaskFiles('${t.id}')">上传成果</button> `:''}${canComplete?`<button class="btn btn-sm btn-primary" onclick="completeTask('${t.id}')">确认完成</button>`:''}</td></tr>`;
   });
   wrap.innerHTML=html+'</tbody></table>';
   document.getElementById('taskAssignBtn')?.classList.toggle('hidden',!isSupervisorView());
