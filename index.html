@@ -81,11 +81,14 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .panel-hd .spacer{flex:1}
 .panel-bd{padding:20px}
 /* 表格 */
-table.tbl{width:100%;border-collapse:collapse;table-layout:fixed}
-table.tbl th{background:rgba(255,255,255,0.28);color:var(--sub);font-weight:600;font-size:12.5px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
-table.tbl td{padding:11px 14px;border-bottom:1px solid rgba(120,123,140,.08);font-size:13.5px;vertical-align:middle;word-break:break-all}
+table.tbl{width:100%;border-collapse:collapse;table-layout:fixed;background:rgba(255,255,255,.72)}
+table.tbl th{background:#dcdde0;color:#333644;font-weight:700;font-size:13px;padding:11px 14px;text-align:left;border-bottom:1px solid #cfd1d5;border-right:1px solid rgba(255,255,255,.48);white-space:nowrap}
+table.tbl td{padding:11px 14px;border-bottom:1px solid #e5e5e5;font-size:13.5px;vertical-align:middle;word-break:break-word}
+table.tbl tbody tr:nth-child(odd){background:rgba(255,255,255,.78)}
+table.tbl tbody tr:nth-child(even){background:rgba(255,248,213,.54)}
 table.tbl tbody tr:last-child td{border-bottom:none}
-table.tbl tbody tr:hover{background:rgba(255,255,255,0.3)}
+table.tbl tbody tr:hover{background:rgba(255,244,193,.72)}
+table.tbl tfoot tr{background:#f4f4f4}
 .link{color:var(--primary);cursor:pointer;font-weight:600}
 .link:hover{text-decoration:underline}
 .empty{padding:44px 20px;text-align:center;color:var(--sub);font-size:13px}
@@ -143,6 +146,7 @@ table.tbl tbody tr:hover{background:rgba(255,255,255,0.3)}
 /* 搜索 */
 .search{padding:9px 14px;border:1px solid var(--glass-line);border-radius:14px;font-size:13px;width:240px;background:rgba(255,255,255,.45);color:var(--text);font-family:inherit;transition:.18s}
 .search:focus{outline:none;border-color:rgba(106,111,214,.6);box-shadow:0 0 0 4px rgba(106,111,214,.12);background:rgba(255,255,255,.7)}
+.search[type=date]::-webkit-calendar-picker-indicator,.search[type=month]::-webkit-calendar-picker-indicator{display:none}
 /* toast */
 #toast{position:fixed;top:76px;left:50%;transform:translateX(-50%);background:rgba(51,54,68,.92);backdrop-filter:blur(8px);color:#fff;padding:10px 22px;border-radius:14px;font-size:13px;z-index:300;opacity:0;transition:.25s;pointer-events:none}
 #toast.show{opacity:1}
@@ -361,6 +365,11 @@ table.tbl tbody tr:hover{background:rgba(255,255,255,0.3)}
 .nav-group.open .nav-tri{transform:rotate(90deg);color:var(--primary)}
 .nav-group-body{display:none;flex-direction:column;gap:4px;margin:3px 0 9px 19px;padding:2px 0 2px 9px;border-left:1px solid rgba(106,111,214,.18)}
 .nav-group.open .nav-group-body{display:flex}
+#mainSideNav{scrollbar-width:thin;scrollbar-color:rgba(120,123,140,.22) transparent}
+#mainSideNav::-webkit-scrollbar{width:4px}
+#mainSideNav::-webkit-scrollbar-track{background:transparent}
+#mainSideNav::-webkit-scrollbar-thumb{background:rgba(120,123,140,.2);border-radius:999px}
+#mainSideNav:hover::-webkit-scrollbar-thumb{background:rgba(120,123,140,.3)}
 .nav-subitem{border:1px solid transparent;background:rgba(255,255,255,.2);color:#5c6070;border-radius:11px;padding:8px 10px;text-align:left;font-family:inherit;font-size:12.5px;line-height:1.35;cursor:pointer;transition:.15s;white-space:nowrap}
 .nav-subitem:hover{background:rgba(255,255,255,.58);border-color:rgba(255,255,255,.76);color:var(--primary-d)}
 .nav-subitem.on{background:rgba(106,111,214,.13);border-color:rgba(106,111,214,.22);color:var(--primary);font-weight:700}
@@ -401,6 +410,7 @@ table.tbl tbody tr:hover{background:rgba(255,255,255,0.3)}
 /* ---------- 固定侧栏：桌面仅主内容滚动，移动端保留行式折叠 ---------- */
 @media(min-width:821px){
   body.app-active{overflow:hidden}
+  #mainSideNav>.nav-item{padding-left:36px}
   #mainSideNav{position:fixed;left:22px;top:22px;bottom:22px;width:236px;min-height:0;max-height:calc(100vh - 44px);z-index:40;overflow-y:auto}
   #view-dash:not(.hidden),#view-lit:not(.hidden),#view-biz:not(.hidden),#view-fee:not(.hidden),#view-fuping:not(.hidden),#view-memo:not(.hidden),#view-todo:not(.hidden),#view-consult:not(.hidden),#view-business:not(.hidden),#view-approval:not(.hidden),#view-docs:not(.hidden),#view-report:not(.hidden){margin-left:280px;height:100vh;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
   #view-dash .glass-shell{grid-template-columns:minmax(0,1fr) 316px;padding:22px;min-height:100vh}
@@ -450,8 +460,24 @@ table.tbl tbody tr:hover{background:rgba(255,255,255,0.3)}
 .memo-editor-meta{display:flex;flex-direction:column;gap:12px}
 .memo-searchbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
 .memo-searchbar .search{flex:1;min-width:220px;max-width:420px}
+.biz-card-stack{display:flex;flex-direction:column;gap:12px}
+.biz-module-card{display:flex;align-items:center;gap:14px;padding:17px 18px}
+.biz-module-card .fi{width:42px;height:42px;border-radius:13px;background:rgba(255,255,255,.52);display:flex;align-items:center;justify-content:center;flex:none;color:var(--primary)}
+.biz-module-card .body{flex:1;min-width:0}
+.biz-module-card h3{font-size:14.5px;margin-bottom:5px}
+.biz-module-card p{font-size:12.5px;color:var(--sub);line-height:1.65}
+.biz-client-stack{display:flex;flex-direction:column;gap:10px;padding:14px}
+.biz-client-card{background:rgba(255,255,255,.42);border:1px solid var(--glass-line);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;transition:.15s}
+.biz-client-card:hover{background:rgba(255,255,255,.62)}
+.biz-client-card .main{flex:1;min-width:0}
+.biz-client-card .name{font-size:14px;font-weight:700}
+.biz-client-card .meta{font-size:12px;color:var(--sub);margin-top:5px;line-height:1.6}
+.memo-card-meta{font-size:12px;color:var(--sub);margin:10px 0 12px;line-height:1.65}
+.memo-card-actions{display:flex;gap:7px;flex-wrap:wrap}
+.memo-card-board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 @media(max-width:1100px){.business-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:760px){.business-grid{grid-template-columns:1fr}.memo-editor-grid{grid-template-columns:1fr}.rich-edit-area{min-height:300px}}
+@media(max-width:1100px){.memo-card-board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.business-grid{grid-template-columns:1fr}.memo-card-board{grid-template-columns:1fr}.memo-editor-grid{grid-template-columns:1fr}.rich-edit-area{min-height:300px}}
 
 .modal:has(.pv-box){max-width:960px;width:94vw}
 .modal:has(.loan-table){max-width:900px;width:94vw}
@@ -631,20 +657,7 @@ table.tbl tbody tr:hover{background:rgba(255,255,255,0.3)}
   </div>
   <div class="page" id="biz-home">
     <div class="page-head"><h2>请选择子模块</h2></div>
-    <div class="fee-grid" style="grid-template-columns:repeat(2,1fr)">
-      <div class="fee-card" onclick="enterPrelit()">
-        <div class="fi"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6a6fd6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 21V6a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 14.5 6v15"/><path d="M14.5 9.5h3.5A1.5 1.5 0 0 1 19.5 11v10"/><path d="M2.5 21h19"/><path d="M8 8.5h1.6M8 12h1.6M8 15.5h1.6M11.5 8.5h1M11.5 12h1"/></svg></div>
-        <h3>尚未进入诉讼</h3>
-        <p>客户基本情况、现存问题、问题分析<br>诉前准备初步判断、相关材料<br><b style="color:var(--primary)">支持一键迁移到诉讼管理</b></p>
-        <div class="amt" style="font-size:16px" id="cnt-prelit"></div>
-      </div>
-      <div class="fee-card" onclick="go('lit')">
-        <div class="fi"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6a6fd6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7.5" width="17" height="12.5" rx="3"/><path d="M9 7.5V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1.5"/><path d="M3.5 12.5h17"/></svg></div>
-        <h3>诉讼管理</h3>
-        <p>案件总览、案件详情（含材料）<br>案件进程、费用、相关安排</p>
-        <div class="amt" style="font-size:16px" id="cnt-lit2"></div>
-      </div>
-    </div>
+    <div class="biz-card-stack" id="bizHomeCards"></div>
   </div>
   <div class="page hidden" id="biz-list-page">
     <div class="page-head"><h2>客户列表</h2><input class="search" id="bizSearch" placeholder="搜索客户名称" oninput="renderBizList()"></div>
@@ -769,8 +782,12 @@ table.tbl tbody tr:hover{background:rgba(255,255,255,0.3)}
       </div>
     </div></div>
   </div>
-  <div class="page hidden" id="memo-inner-detail"></div>
+  <div class="page hidden" id="memo-inner-detail">
+    <div class="page-head"><h2 id="innerMemoTitle"></h2><span class="spacer"></span><button class="btn btn-sm" onclick="showInnerMemoHome()">返回日期看板</button><button class="btn btn-sm btn-primary" onclick="openInnerNoteModal(curInnerDate)">＋ 新增记录</button></div>
+    <div id="innerNoteList" class="memo-card-board"></div>
+  </div>
   <div class="page hidden" id="memo-detail">
+    <div class="page-head"><h2 id="memoTitle"></h2><span class="spacer"></span><button class="btn btn-sm" onclick="showMemoHome()">返回便签看板</button><button class="btn btn-sm btn-primary" onclick="openMemoRecModal()">＋ 新增记录</button><button class="btn btn-sm btn-danger" onclick="delMemoBoard()">删除便签组</button></div>
     <div class="panel"><div class="panel-bd" style="padding:0" id="memoRecWrap"></div></div>
   </div>
 </div>
@@ -935,11 +952,19 @@ async function uploadLegalFile(file,folder,allowedExts){
   if(allowedExts&&!allowedExts.includes(ext))throw new Error('不支持的文件格式：.'+ext);
   const safeName=String(file.name||'file').replace(/[^\w.\-\u4e00-\u9fa5]+/g,'_').slice(-100);
   const path=(folder||'common')+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,7)+'-'+safeName;
-  const up=await sb.storage.from(FILE_BUCKET).upload(path,file,{upsert:false,contentType:file.type||undefined});
-  if(up.error)throw up.error;
-  return {path,name:file.name,ext,size:file.size,type:file.type||'',time:new Date().toLocaleString('zh-CN')};
+  try{
+    const up=await sb.storage.from(FILE_BUCKET).upload(path,file,{upsert:false});
+    if(up.error)throw up.error;
+    return {path,name:file.name,ext,size:file.size,type:file.type||'',time:new Date().toLocaleString('zh-CN')};
+  }catch(err){
+    if(file.size>5*1024*1024)throw err;
+    const data=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(file)});
+    console.warn('Storage 上传失败，已使用本地兼容存储',err);
+    return {path:'',name:file.name,ext,size:file.size,type:file.type||'',time:new Date().toLocaleString('zh-CN'),data};
+  }
 }
 async function signedLegalUrl(meta,expires){
+  if(meta&&meta.data)return meta.data;
   if(!meta||!meta.path)throw new Error('文件信息缺失');
   const res=await sb.storage.from(FILE_BUCKET).createSignedUrl(meta.path,expires||3600);
   if(res.error)throw res.error;
@@ -3319,29 +3344,42 @@ function memoRecordRows(){
 function renderMemoList(){
   const wrap=document.getElementById('memoListWrap');if(!wrap)return;
   const q=(document.getElementById('memoOutSearch')?.value||'').trim().toLowerCase();
-  let rows=memoRecordRows();
-  if(q)rows=rows.filter(x=>[x.group.toWho,x.record.title,plainText(x.record.content),x.record.note].join(' ').toLowerCase().includes(q));
-  rows.sort((a,b)=>(b.record.time||'').localeCompare(a.record.time||'')||((b.record.updatedAt||0)-(a.record.updatedAt||0)));
-  let html='<table class="tbl"><colgroup><col style="width:12%"><col style="width:16%"><col style="width:20%"><col style="width:34%"><col style="width:18%"></colgroup><thead><tr><th>日期</th><th>接收对象</th><th>标题</th><th>内容</th><th>操作</th></tr></thead><tbody>';
-  if(!rows.length)html+='<tr><td colspan="5"><div class="empty">暂无对外便签</div></td></tr>';
-  rows.forEach(x=>{
-    html+=`<tr><td>${esc(x.record.time||'—')}</td><td>${esc(x.group.toWho)}</td><td>${esc(x.record.title||plainText(x.record.content).slice(0,24)||'未命名')}</td><td class="rich-text">${richText(x.record.content||'')}</td><td style="white-space:nowrap"><button class="btn btn-sm" onclick="openMemoRecModal('${x.groupId}','${x.record.id}')">编辑</button> <button class="btn btn-sm btn-danger" onclick="deleteMemoRecord('out','${x.groupId}','${x.record.id}')">删除</button></td></tr>`;
+  let groups=(DB.memos||[]).filter(g=>{
+    if(!q)return true;
+    return String(g.toWho||'').toLowerCase().includes(q)||(g.records||[]).some(r=>[r.title,plainText(r.content),r.note].join(' ').toLowerCase().includes(q));
   });
-  wrap.innerHTML=html+'</tbody></table>';
+  groups.sort((a,b)=>{
+    const al=(a.records||[]).reduce((m,r)=>Math.max(m,r.updatedAt||0,Date.parse(r.time||'')||0),0);
+    const bl=(b.records||[]).reduce((m,r)=>Math.max(m,r.updatedAt||0,Date.parse(r.time||'')||0),0);
+    return bl-al;
+  });
+  if(!groups.length){wrap.innerHTML='<div class="empty">暂无对外便签</div>';return}
+  wrap.innerHTML='<div class="memo-card-board">'+groups.map(g=>{
+    const rec=(g.records||[]).slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)||String(b.time||'').localeCompare(String(a.time||'')))[0];
+    return `<div class="mod-card">
+      <h4>📝 致 ${esc(g.toWho)}<span style="flex:1"></span><button class="btn btn-sm btn-primary" onclick="openMemoBoard('${g.id}')">进入</button></h4>
+      <div class="memo-card-meta">记录 ${(g.records||[]).length} 条 · 最近更新：${esc(rec?.time||'—')}</div>
+      <div class="memo-card-actions"><button class="btn btn-sm" onclick="openMemoRecModal('${g.id}')">＋ 新增记录</button><button class="btn btn-sm btn-danger" onclick="delMemoBoard('${g.id}')">删除</button></div>
+    </div>`;
+  }).join('')+'</div>';
 }
 function renderInnerMemoList(){
   const wrap=document.getElementById('innerMemoListWrap');if(!wrap)return;
   const q=(document.getElementById('memoInSearch')?.value||'').trim().toLowerCase();
-  let rows=[];
-  (DB.innerMemos||[]).forEach(g=>(g.records||[]).forEach(r=>rows.push({group:g,record:r})));
-  if(q)rows=rows.filter(x=>[x.record.title,plainText(x.record.content),innerDateLabel(x.group.date)].join(' ').toLowerCase().includes(q));
-  rows.sort((a,b)=>(b.group.date||'').localeCompare(a.group.date||'')||((b.record.updatedAt||0)-(a.record.updatedAt||0)));
-  let html='<table class="tbl"><colgroup><col style="width:16%"><col style="width:22%"><col style="width:40%"><col style="width:22%"></colgroup><thead><tr><th>日期</th><th>标题</th><th>内容</th><th>操作</th></tr></thead><tbody>';
-  if(!rows.length)html+='<tr><td colspan="4"><div class="empty">暂无对内便签</div></td></tr>';
-  rows.forEach(x=>{
-    html+=`<tr><td>${innerDateLabel(x.group.date)}</td><td>${esc(x.record.title||'未命名')}</td><td class="rich-text">${richText(x.record.content||'')}</td><td style="white-space:normal"><button class="btn btn-sm" onclick="openInnerNoteModal('${x.group.date}','${x.record.id}')">编辑</button> <button class="btn btn-sm" onclick="copyInnerNoteToTodo('${x.group.date}','${x.record.id}')">复制到待办</button> <button class="btn btn-sm btn-danger" onclick="deleteMemoRecord('in','${x.group.date}','${x.record.id}')">删除</button></td></tr>`;
+  let groups=(DB.innerMemos||[]).filter(g=>{
+    if(!q)return true;
+    return innerDateLabel(g.date).toLowerCase().includes(q)||(g.records||[]).some(r=>[r.title,plainText(r.content),r.note].join(' ').toLowerCase().includes(q));
   });
-  wrap.innerHTML=html+'</tbody></table>';
+  groups.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  if(!groups.length){wrap.innerHTML='<div class="empty">暂无对内便签</div>';return}
+  wrap.innerHTML='<div class="memo-card-board">'+groups.map(g=>{
+    const rec=(g.records||[]).slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))[0];
+    return `<div class="mod-card">
+      <h4>📅 ${innerDateLabel(g.date)}<span style="flex:1"></span><button class="btn btn-sm btn-primary" onclick="openInnerMemoBoard('${g.date}')">进入</button></h4>
+      <div class="memo-card-meta">记录 ${(g.records||[]).length} 条 · 最近更新：${esc(tdFmtTime(rec?.updatedAt||rec?.createdAt)||'—')}</div>
+      <div class="memo-card-actions"><button class="btn btn-sm" onclick="openInnerNoteModal('${g.date}')">＋ 新增记录</button><button class="btn btn-sm btn-danger" onclick="delInnerMemoGroup('${g.date}')">删除</button></div>
+    </div>`;
+  }).join('')+'</div>';
 }
 function openMemoEditor(scope,groupId,recordId,prefill){
   const source=prefill||{};
@@ -3408,13 +3446,50 @@ function saveMemoEditor(){
   save();toast(recordId?'便签已保存':'便签已新增');
   memoEditCtx=null;document.getElementById('memo-editor-page').classList.add('hidden');setMemoTab(scope);
 }
-function openMemoRecModal(mid,rid){openMemoEditor('out',mid,rid)}
+function openMemoRecModal(mid,rid){openMemoEditor('out',mid||(curMemo&&curMemo.id)||'',rid)}
 function openInnerNoteModal(ds,rid,prefill){openMemoEditor('in',ds,rid,prefill)}
-function openInnerMemoBoard(ds){
-  setMemoTab('in');const s=document.getElementById('memoInSearch');
-  if(s){s.value=ds?innerDateLabel(ds):'';renderInnerMemoList()}
+function openMemoBoard(id){
+  curMemo=(DB.memos||[]).find(g=>g.id===id);if(!curMemo)return;
+  document.getElementById('memo-home').classList.add('hidden');
+  document.getElementById('memo-pad').classList.add('hidden');
+  document.getElementById('memo-inner-detail').classList.add('hidden');
+  document.getElementById('memo-editor-page').classList.add('hidden');
+  document.getElementById('memo-detail').classList.remove('hidden');
+  document.getElementById('memo-crumb2').textContent='/ 对外便签 / '+curMemo.toWho;
+  renderMemoRecs();
 }
-function openMemoBoard(){setMemoTab('out')}
+function renderMemoRecs(){
+  const wrap=document.getElementById('memoRecWrap'),g=curMemo;if(!wrap||!g)return;
+  document.getElementById('memoTitle').textContent='致 '+g.toWho;
+  const rows=(g.records||[]).slice().sort((a,b)=>String(b.time||'').localeCompare(String(a.time||''))||((b.updatedAt||0)-(a.updatedAt||0)));
+  wrap.innerHTML=rows.length?'<div class="memo-card-board" style="padding:14px">'+rows.map(r=>`<div class="mod-card">
+    <h4>${esc(r.title||plainText(r.content).slice(0,24)||'未命名')}<span style="flex:1"></span><span class="tag tag-gray">${esc(r.time||'')}</span></h4>
+    <div class="rich-text" style="margin:10px 0;line-height:1.8">${richText(r.content||'')}</div>
+    <div class="memo-card-actions"><button class="btn btn-sm" onclick="openMemoRecModal('${g.id}','${r.id}')">编辑</button><button class="btn btn-sm btn-danger" onclick="deleteMemoRecord('out','${g.id}','${r.id}')">删除</button></div>
+  </div>`).join('')+'</div>':'<div class="empty">暂无记录</div>';
+}
+function openInnerMemoBoard(ds){
+  const g=DB.innerMemos.find(x=>x.date===ds);if(!g)return;
+  curInnerDate=ds;
+  document.getElementById('memo-home').classList.add('hidden');
+  document.getElementById('memo-pad').classList.add('hidden');
+  document.getElementById('memo-detail').classList.add('hidden');
+  document.getElementById('memo-editor-page').classList.add('hidden');
+  document.getElementById('memo-inner-detail').classList.remove('hidden');
+  document.getElementById('memo-crumb2').textContent='/ 对内便签 / '+innerDateLabel(ds);
+  renderInnerNoteList();
+}
+function renderInnerNoteList(){
+  const g=DB.innerMemos.find(x=>x.date===curInnerDate),wrap=document.getElementById('innerNoteList');
+  if(!g||!wrap)return;
+  document.getElementById('innerMemoTitle').textContent=innerDateLabel(g.date);
+  const rows=(g.records||[]).slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  wrap.innerHTML=rows.map(r=>`<div class="mod-card">
+    <h4>${esc(r.title||'未命名')}<span style="flex:1"></span><span class="tag tag-gray">${esc(tdFmtTime(r.updatedAt||r.createdAt))}</span></h4>
+    <div class="rich-text" style="margin:10px 0;line-height:1.8">${richText(r.content||'')}</div>
+    <div class="memo-card-actions"><button class="btn btn-sm" onclick="openInnerNoteModal('${g.date}','${r.id}')">编辑</button><button class="btn btn-sm" onclick="copyInnerNoteToTodo('${g.date}','${r.id}')">复制到待办</button><button class="btn btn-sm btn-danger" onclick="deleteMemoRecord('in','${g.date}','${r.id}')">删除</button></div>
+  </div>`).join('');
+}
 function deleteMemoRecord(scope,groupId,rid){
   if(!confirm('确定删除这条便签？'))return;
   if(scope==='in'){
@@ -3424,7 +3499,17 @@ function deleteMemoRecord(scope,groupId,rid){
     const g=DB.memos.find(x=>x.id===groupId);if(g)g.records=g.records.filter(r=>r.id!==rid);
     DB.memos=DB.memos.filter(g=>g.records.length);
   }
-  save();if(scope==='in')renderInnerMemoList();else renderMemoList();toast('已删除');
+  save();
+  if(scope==='in'){
+    if(!document.getElementById('memo-inner-detail').classList.contains('hidden')&&DB.innerMemos.some(g=>g.date===groupId))renderInnerNoteList();
+    else if(!document.getElementById('memo-inner-detail').classList.contains('hidden'))showInnerMemoHome();
+    else renderInnerMemoList();
+  }else{
+    if(!document.getElementById('memo-detail').classList.contains('hidden')&&DB.memos.some(g=>g.id===groupId))renderMemoRecs();
+    else if(!document.getElementById('memo-detail').classList.contains('hidden'))showMemoHome();
+    else renderMemoList();
+  }
+  toast('已删除');
 }
 function copyInnerNoteToTodo(ds,rid){
   const g=DB.innerMemos.find(x=>x.date===ds),note=g&&g.records.find(r=>r.id===rid);if(!note)return;
@@ -3433,6 +3518,93 @@ function copyInnerNoteToTodo(ds,rid){
     DB.todos.push({id:uid(),title:combined,date:val('ct-date')||today(),priority:val('ct-priority'),note:'来源：对内便签 '+ds,done:false,owner:todoOwner(),createdAt:Date.now(),doneAt:null});
     save();renderTodos();toast('已复制到待办事项');return true;
   },'确认复制');
+}
+
+/* ---------- 商办法律分析：纵向小卡片与富文本 ---------- */
+function richFieldHtml(id,value,minHeight){
+  return `<div class="rich-toolbar" data-rich-toolbar><button type="button" data-rich-cmd="hiliteColor" data-rich-value="#f8e58b" title="高光">▰</button><button type="button" data-rich-cmd="bold" title="加粗"><b>B</b></button><button type="button" data-rich-cmd="italic" title="斜体"><i>I</i></button><input type="color" data-rich-color value="#333644" title="字体颜色"></div><div id="${id}" class="rich-edit-area rich-editor" style="min-height:${minHeight||160}px" contenteditable="true">${sanitizeRichHtml(value||'')}</div>`;
+}
+function renderBizHomeCards(){
+  const box=document.getElementById('bizHomeCards');if(!box)return;
+  box.innerHTML=`
+    <div class="mod-card biz-module-card" onclick="enterPrelit()">
+      <div class="fi"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 21V6a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 14.5 6v15"/><path d="M14.5 9.5h3.5A1.5 1.5 0 0 1 19.5 11v10"/><path d="M2.5 21h19"/></svg></div>
+      <div class="body"><h3>尚未进入诉讼</h3><p>客户基本情况、现存问题、问题分析与诉前准备</p></div>
+      <div class="sub" style="font-size:12px;white-space:nowrap">分析中客户 ${(DB.clients||[]).length} 家</div>
+    </div>
+    <div class="mod-card biz-module-card" onclick="go('lit')">
+      <div class="fi"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7.5" width="17" height="12.5" rx="3"/><path d="M9 7.5V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1.5"/><path d="M3.5 12.5h17"/></svg></div>
+      <div class="body"><h3>诉讼管理</h3><p>案件总览、进程、费用、材料与相关安排</p></div>
+      <div class="sub" style="font-size:12px;white-space:nowrap">在办案件 ${(DB.cases||[]).length} 件</div>
+    </div>`;
+}
+function showBizHome(){
+  curClient=null;
+  document.getElementById('biz-home').classList.remove('hidden');
+  document.getElementById('biz-list-page').classList.add('hidden');
+  document.getElementById('biz-detail-page').classList.add('hidden');
+  document.getElementById('biz-crumb2').textContent='';
+  document.getElementById('bizAddBtn').classList.add('hidden');
+  renderBizHomeCards();
+}
+function renderBizList(){
+  const kw=(document.getElementById('bizSearch')?.value||'').trim().toLowerCase();
+  const list=(DB.clients||[]).filter(c=>!kw||c.name.toLowerCase().includes(kw));
+  const box=document.getElementById('bizListWrap');if(!box)return;
+  if(!list.length){box.innerHTML='<div class="empty">暂无客户，点击右上角「新增客户」创建</div>';return}
+  box.innerHTML='<div class="biz-client-stack">'+list.map(c=>`<div class="biz-client-card">
+    <div class="main"><div class="name">${esc(c.name)}</div><div class="meta">合同期：${esc(c.contractStart)||'—'} 至 ${esc(c.contractEnd)||'—'}　履约：${plainText(c.performance)||'—'}</div></div>
+    <div class="sub" style="font-size:12px;white-space:nowrap">问题 ${c.problems.length} 项</div>
+    <button class="btn btn-sm btn-primary" onclick="openClient('${c.id}')">进入</button>
+  </div>`).join('')+'</div>';
+}
+function renderBizDetail(){
+  const c=curClient;if(!c)return;
+  document.getElementById('bizDetailName').textContent=c.name;
+  document.getElementById('bizDetailTag').innerHTML=c.prep.need?'<span class="tag tag-red">建议诉前准备</span>':'<span class="tag tag-green">暂无需诉前准备</span>';
+  document.getElementById('bizBaseInfo').innerHTML=`<div class="info-grid">
+   ${infoCell('客户名称',esc(c.name))}${infoCell('合同开始日期',esc(c.contractStart))}${infoCell('合同结束日期',esc(c.contractEnd))}${infoCell('剩余租期',remainLease(c))}
+   ${infoCell('租金（元/月）',`<span class="num">${money(c.rent)}</span>`)}${infoCell('租金支付方式',esc(c.payMethod))}${infoCell('租赁保证金（元）',`<span class="num">${money(c.deposit)}</span>`)}${infoCell('履约情况',richText(c.performance))}
+  </div><div style="margin-top:12px;text-align:right"><button class="btn btn-sm" onclick="openClientModal('${c.id}')">✎ 编辑基本情况</button></div>`;
+  const lv={高:'tag-red',中:'tag-orange',低:'tag-gray'};
+  document.getElementById('bizProblems').innerHTML=c.problems.length?c.problems.map(p=>`
+   <div style="border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px">
+     <div style="display:flex;align-items:center;gap:10px"><b>${esc(p.title)}</b><span class="tag ${lv[p.level]||'tag-gray'}">风险等级：${esc(p.level)}</span>
+     <span class="spacer" style="flex:1"></span><button class="btn btn-sm" onclick="openProblemModal('${p.id}')">编辑</button><button class="btn btn-sm btn-danger" onclick="delProblem('${p.id}')">删除</button></div>
+     <div class="rich-text" style="margin-top:8px;color:#374151;line-height:1.7">${richText(p.desc)||'—'}</div></div>`).join(''):'<div class="empty">暂无现存问题</div>';
+  document.getElementById('bizAnalysis').innerHTML=`<div class="txt rich-text" style="min-height:60px">${richText(c.analysis)||'—'}</div>`;
+  document.getElementById('bizPrep').innerHTML=`<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+     <span style="font-size:14px"><b>初步判断：</b></span><span class="tag ${c.prep.need?'tag-red':'tag-green'}" style="font-size:13px;padding:5px 16px">${c.prep.need?'⚠ 需要做诉前准备':'✓ 暂不需要诉前准备'}</span>
+     <span style="flex:1"></span><button class="btn btn-sm" onclick="togglePrep()">切换判断</button><button class="btn btn-sm" onclick="openPrepModal()">✎ 编辑说明</button></div>
+   <div class="txt rich-text">${richText(c.prep.note)||'—'}</div>`;
+  document.getElementById('bizMaterials').innerHTML=bizMaterial(c);
+  bindBizDropzone(c);
+}
+function openProblemModal(pid){
+  const c=curClient;if(!c)return;
+  const p=pid?c.problems.find(x=>x.id===pid):{title:'',desc:'',level:'中'};
+  openModal(pid?'编辑问题':'添加现存问题',`<div class="frm-row">
+   <div class="field"><label>问题标题 *</label><input id="pb-title" value="${esc(p.title)}"></div>
+   <div class="field"><label>风险等级</label><select id="pb-level">${['高','中','低'].map(l=>`<option ${p.level===l?'selected':''}>${l}</option>`).join('')}</select></div>
+   <div class="field full"><label>问题描述</label>${richFieldHtml('pb-desc',p.desc,170)}</div></div>`,()=>{
+    const title=val('pb-title');if(!title)return setErr('pb-title','请填写问题标题');
+    const desc=sanitizeRichHtml(document.getElementById('pb-desc').innerHTML);
+    const obj={id:pid||uid(),title,desc,level:val('pb-level')};
+    if(pid){const i=c.problems.findIndex(x=>x.id===pid);c.problems[i]=obj}else c.problems.push(obj);
+    save();renderBizDetail();toast('已保存');return true;
+  });
+}
+function openAnalysisModal(){
+  if(!curClient)return;
+  openModal('编辑问题分析',`<div class="field"><label>问题分析</label>${richFieldHtml('an-txt',curClient.analysis,240)}</div>`,()=>{
+    curClient.analysis=sanitizeRichHtml(document.getElementById('an-txt').innerHTML);save();renderBizDetail();toast('已保存');return true;
+  });
+}
+function openPrepModal(){
+  if(!curClient)return;
+  openModal('编辑诉前准备判断说明',`<div class="field"><label>说明（如：建议采取的措施、准备事项）</label>${richFieldHtml('pp-note',curClient.prep.note,200)}</div>`,()=>{
+    curClient.prep.note=sanitizeRichHtml(document.getElementById('pp-note').innerHTML);save();renderBizDetail();toast('已保存');return true;
+  });
 }
 
 /* ---------- 工商管理 ---------- */
